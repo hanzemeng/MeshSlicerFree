@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 
 namespace Hanzzz.MeshSlicerFree
 {
@@ -12,6 +13,8 @@ public class SliceControl : MonoBehaviour
     [SerializeField] private KeyCode cutKey;
     [SerializeField] private Vector3 topMoveDistance;
     [SerializeField] private Vector3 bottomMoveDistance;
+
+    [SerializeField] private TMP_Text loggingText;
 
     private static Slicer slicer;
 
@@ -34,14 +37,15 @@ public class SliceControl : MonoBehaviour
         Slicer.SliceReturnValue sliceReturnValue;
         try
         {
+            int triangleCount = originalGameObject.GetComponent<MeshFilter>().sharedMesh.triangles.Length;
             var watch = System.Diagnostics.Stopwatch.StartNew();
             sliceReturnValue = slicer.Slice(originalGameObject, plane, intersectionMaterial);
-            Debug.Log($"Slice time: {watch.ElapsedMilliseconds} ms.");
+            loggingText.text = $"Triangle count: {triangleCount}; slice time: {watch.ElapsedMilliseconds} ms.";
         }
         catch
         {
             sliceReturnValue = null;
-            Debug.Log($"Slice failed.");
+            loggingText.text = $"Slice failed.";
         }
 
         if(null == sliceReturnValue)
