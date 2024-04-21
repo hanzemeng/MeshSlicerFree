@@ -46,10 +46,14 @@ namespace Hanzzz.MeshSlicerFree
                 return;
             }
             isSlicing = true;
-            int startFrame =  Time.frameCount;
             Plane plane = new Plane(slicePlane.up, slicePlane.position);
+
+            int triangleCount = originalGameObject.GetComponent<MeshFilter>().sharedMesh.triangles.Length;
+            int startFrame =  Time.frameCount;
+            var watch = System.Diagnostics.Stopwatch.StartNew();
             Slicer.SliceReturnValue sliceReturnValue = await slicer.SliceAsync(originalGameObject, plane, intersectionMaterial);
-            Debug.Log(Time.frameCount-startFrame);
+            loggingText.text = $"Triangle count: {triangleCount}; slice frame: {Time.frameCount-startFrame}; slice time: {watch.ElapsedMilliseconds} ms.";
+
             sliceReturnValue.topGameObject.transform.SetParent(originalGameObject.transform.parent, false);
             sliceReturnValue.bottomGameObject.transform.SetParent(originalGameObject.transform.parent, false);
             sliceReturnValue.topGameObject.transform.position += topMoveDistance;
