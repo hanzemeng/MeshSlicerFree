@@ -33,20 +33,27 @@ namespace Hanzzz.MeshSlicerFree
                 return;
             }
 
-            Slice();
-        }
-
-        private async void Slice()
-        {
             Plane plane = new Plane(slicePlane.up, slicePlane.position);
-            SkinnedSlicer.SliceReturnValue sliceReturnValue =  await slicer.SliceAsync(originalGameObject, 0, 1, plane,intersectionMaterial);;
+            SkinnedSlicer.SliceReturnValue sliceReturnValue;
+            try
+            {
+                int triangleCount = originalGameObject.transform.GetChild(0).GetComponent<SkinnedMeshRenderer>().sharedMesh.triangles.Length;
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                sliceReturnValue = slicer.Slice(originalGameObject, 0, 1, plane, intersectionMaterial);
+                loggingText.text = $"Triangle count: {triangleCount}; slice time: {watch.ElapsedMilliseconds} ms.";
+            }
+            catch
+            {
+                sliceReturnValue = null;
+                loggingText.text = $"Slice failed.";
+            }
 
             if(null == sliceReturnValue)
             {
                 return;
             }
-            sliceReturnValue.topGameObject.transform.SetParent(originalGameObject.transform.parent,false);
-            sliceReturnValue.bottomGameObject.transform.SetParent(originalGameObject.transform.parent,false);
+            sliceReturnValue.topGameObject.transform.SetParent(originalGameObject.transform.parent, false);
+            sliceReturnValue.bottomGameObject.transform.SetParent(originalGameObject.transform.parent, false);
             sliceReturnValue.topGameObject.transform.position += topMoveDistance;
             sliceReturnValue.bottomGameObject.transform.position += bottomMoveDistance;
 

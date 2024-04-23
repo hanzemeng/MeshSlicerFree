@@ -767,8 +767,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.098889686, y: 0.07023476, z: -0.0071389894, w: 0.9925911}
-  m_LocalPosition: {x: -0.26587015, y: 1.1651676, z: -4.1721077}
+  m_LocalRotation: {x: -0.22661294, y: -0.1820821, z: 0.04328836, w: -0.9558341}
+  m_LocalPosition: {x: -2.916568, y: 2.9465272, z: -2.7994995}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -920,8 +920,8 @@ MonoBehaviour:
   slicePlane: {fileID: 571099408}
   intersectionMaterial: {fileID: 2100000, guid: ee57535b15bfc4c87a08e49b4e15201f, type: 2}
   cutKey: 49
-  topMoveDistance: {x: 0, y: 0, z: 0}
-  bottomMoveDistance: {x: 0, y: 0, z: 0}
+  topMoveDistance: {x: 0.05, y: 0, z: 0}
+  bottomMoveDistance: {x: -0.05, y: 0, z: 0}
   loggingText: {fileID: 395221769}
 --- !u!1 &166670063311297583
 GameObject:
