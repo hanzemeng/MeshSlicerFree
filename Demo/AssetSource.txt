@@ -1,7 +1,1 @@
 Assets with the PP tag are from Prototyping Pack (Free): https://assetstore.unity.com/packages/3d/prototyping-pack-free-94277
-
-Assets with the AC tag are from Adventure Character: https://assetstore.unity.com/packages/3d/characters/humanoids/humans/adventure-character-201384
-
-Assets with the WBP tag are from Wooden Barrel Pack: https://assetstore.unity.com/packages/3d/props/wooden-barrel-pack-256618
-
-Assets with the RK tag are from Robot Kyle | URP: https://assetstore.unity.com/packages/3d/characters/robots/robot-kyle-urp-4696

@@ -7,6 +7,8 @@ namespace Hanzzz.MeshSlicerFree
     public class SliceControlSkinned : MonoBehaviour
     {
         [SerializeField] private GameObject originalGameObject;
+        [SerializeField] private int skinnedMeshRendererIndex;
+        [SerializeField] private int rootIndex;
         [SerializeField] private Transform slicePlane;
         [SerializeField] private Material intersectionMaterial;
 
@@ -39,7 +41,7 @@ namespace Hanzzz.MeshSlicerFree
             {
                 int triangleCount = originalGameObject.transform.GetChild(0).GetComponent<SkinnedMeshRenderer>().sharedMesh.triangles.Length;
                 var watch = System.Diagnostics.Stopwatch.StartNew();
-                sliceReturnValue = slicer.Slice(originalGameObject, 0, 1, plane, intersectionMaterial);
+                sliceReturnValue = slicer.Slice(originalGameObject, skinnedMeshRendererIndex, rootIndex, plane, intersectionMaterial);
                 loggingText.text = $"Triangle count: {triangleCount}; slice time: {watch.ElapsedMilliseconds} ms.";
             }
             catch

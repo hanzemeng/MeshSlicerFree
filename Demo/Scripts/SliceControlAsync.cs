@@ -3,7 +3,6 @@ using TMPro;
 
 namespace Hanzzz.MeshSlicerFree
 {
-
     public class SliceControlAsync : MonoBehaviour
     {
         [SerializeField] private GameObject originalGameObject;
@@ -36,9 +35,8 @@ namespace Hanzzz.MeshSlicerFree
             }
 
             Slice();
-            
-            
         }
+
         private async void Slice()
         {
             if(isSlicing)
