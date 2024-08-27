@@ -56,7 +56,7 @@ public class MeshSlicer
         m_targetMaterials = new();
     }
 
-    public (GameObject, GameObject) Slice(GameObject targetGameObject, Plane slicePlane, Material intersectionMaterial)
+    public (GameObject, GameObject) Slice(GameObject targetGameObject, (Vector3,Vector3,Vector3) slicePlane, Material intersectionMaterial)
     {
         Transform targetTransform = targetGameObject.transform;
         Mesh targetMesh = targetGameObject.GetComponent<MeshFilter>().sharedMesh;
@@ -72,7 +72,7 @@ public class MeshSlicer
             CreateSlicedGameObject(slicedMesh.Item2, targetGameObject, intersectionMaterial)
         );
     }
-    public async Task<(GameObject, GameObject)> SliceAsync(GameObject targetGameObject, Plane slicePlane, Material intersectionMaterial)
+    public async Task<(GameObject, GameObject)> SliceAsync(GameObject targetGameObject, (Vector3,Vector3,Vector3) slicePlane, Material intersectionMaterial)
     {
         Transform targetTransform = targetGameObject.transform;
         Mesh targetMesh = targetGameObject.GetComponent<MeshFilter>().sharedMesh;
@@ -89,7 +89,7 @@ public class MeshSlicer
         );
     }
 
-    public (Mesh, Mesh) Slice(Plane slicePlane, Mesh targetMesh, Transform targetTransform, bool createSubmeshForIntersection)
+    public (Mesh, Mesh) Slice((Vector3,Vector3,Vector3) slicePlane, Mesh targetMesh, Transform targetTransform, bool createSubmeshForIntersection)
     {
         CopyTargetData(targetMesh, targetTransform);
 
@@ -97,7 +97,7 @@ public class MeshSlicer
         {
             m_targetVertices[i] = m_targetLocalToWorldMatrix.MultiplyPoint(m_targetVertices[i]);
         }
-        m_slicer.Slice(m_targetVertices, m_targetTriangles, slicePlane);
+        m_slicer.Slice(m_targetVertices, m_targetTriangles, slicePlane.Item1,slicePlane.Item2,slicePlane.Item3);
         if(0 == m_slicer.m_tTriangles.Count || 0 == m_slicer.m_bTriangles.Count)
         {
             return (null,null);
@@ -117,7 +117,7 @@ public class MeshSlicer
             CreateSlicedMesh(m_bMVDM, m_bottomTriangles, createSubmeshForIntersection)
         );
     }
-    public async Task<(Mesh, Mesh)> SliceAsync(Plane slicePlane, Mesh targetMesh, Transform targetTransform, bool createSubmeshForIntersection)
+    public async Task<(Mesh, Mesh)> SliceAsync((Vector3,Vector3,Vector3) slicePlane, Mesh targetMesh, Transform targetTransform, bool createSubmeshForIntersection)
     {
         CopyTargetData(targetMesh, targetTransform);
 
@@ -127,7 +127,7 @@ public class MeshSlicer
             {
                 m_targetVertices[i] = m_targetLocalToWorldMatrix.MultiplyPoint(m_targetVertices[i]);
             }
-            m_slicer.Slice(m_targetVertices, m_targetTriangles, slicePlane);
+            m_slicer.Slice(m_targetVertices, m_targetTriangles, slicePlane.Item1,slicePlane.Item2,slicePlane.Item3);
         });
         if(0 == m_slicer.m_tTriangles.Count || 0 == m_slicer.m_bTriangles.Count)
         {

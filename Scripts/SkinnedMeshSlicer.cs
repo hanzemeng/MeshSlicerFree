@@ -62,7 +62,7 @@ public class SkinnedMeshSlicer
         m_targetMaterials = new();
     }
 
-    public (GameObject, GameObject) Slice(GameObject targetGameObject, int skinnedMeshRendererIndex, int rootIndex, Plane slicePlane,Material intersectionMaterial)
+    public (GameObject, GameObject) Slice(GameObject targetGameObject, int skinnedMeshRendererIndex, int rootIndex, (Vector3,Vector3,Vector3) slicePlane, Material intersectionMaterial)
     {
         Transform skinnedMeshRendererTransform = targetGameObject.transform.GetChild(skinnedMeshRendererIndex);
         SkinnedMeshRenderer targetSkinnedMeshRenderer = skinnedMeshRendererTransform.GetComponent<SkinnedMeshRenderer>();
@@ -79,7 +79,7 @@ public class SkinnedMeshSlicer
             CreateSlicedGameObject(slicedMesh.Item2, targetGameObject, targetSkinnedMeshRenderer, skinnedMeshRendererIndex, rootIndex, intersectionMaterial)
         );
     }
-    public async Task<(GameObject, GameObject)> SliceAsync(GameObject targetGameObject, int skinnedMeshRendererIndex, int rootIndex, Plane slicePlane,Material intersectionMaterial)
+    public async Task<(GameObject, GameObject)> SliceAsync(GameObject targetGameObject, int skinnedMeshRendererIndex, int rootIndex, (Vector3,Vector3,Vector3) slicePlane, Material intersectionMaterial)
     {
         Transform skinnedMeshRendererTransform = targetGameObject.transform.GetChild(skinnedMeshRendererIndex);
         SkinnedMeshRenderer targetSkinnedMeshRenderer = skinnedMeshRendererTransform.GetComponent<SkinnedMeshRenderer>();
@@ -97,7 +97,7 @@ public class SkinnedMeshSlicer
         );
     }
 
-    public (Mesh, Mesh) Slice(Plane slicePlane, Mesh targetMesh, Transform[] targetBones, bool createSubmeshForIntersection)
+    public (Mesh, Mesh) Slice((Vector3,Vector3,Vector3) slicePlane, Mesh targetMesh, Transform[] targetBones, bool createSubmeshForIntersection)
     {
         CopyTargetData(targetMesh, targetBones);
         for(int i=0; i<m_targetVertices.Count; i++)
@@ -105,7 +105,7 @@ public class SkinnedMeshSlicer
             m_targetVertices[i] = GetLocalToWorldMatrix(m_targetBoneWeights[i]).MultiplyPoint(m_targetVertices[i]);
         }
 
-        m_slicer.Slice(m_targetVertices, m_targetTriangles, slicePlane);
+        m_slicer.Slice(m_targetVertices, m_targetTriangles, slicePlane.Item1, slicePlane.Item2, slicePlane.Item3);
         if(0 == m_slicer.m_tTriangles.Count || 0 == m_slicer.m_bTriangles.Count)
         {
             return (null,null);
@@ -125,7 +125,7 @@ public class SkinnedMeshSlicer
             CreateSlicedMesh(m_bMVDM, m_bottomTriangles, createSubmeshForIntersection)
         );
     }
-    public async Task<(Mesh, Mesh)> SliceAsync(Plane slicePlane, Mesh targetMesh, Transform[] targetBones, bool createSubmeshForIntersection)
+    public async Task<(Mesh, Mesh)> SliceAsync((Vector3,Vector3,Vector3) slicePlane, Mesh targetMesh, Transform[] targetBones, bool createSubmeshForIntersection)
     {
         CopyTargetData(targetMesh, targetBones);
 
@@ -135,7 +135,7 @@ public class SkinnedMeshSlicer
             {
                 m_targetVertices[i] = GetLocalToWorldMatrix(m_targetBoneWeights[i]).MultiplyPoint(m_targetVertices[i]);
             }
-            m_slicer.Slice(m_targetVertices, m_targetTriangles, slicePlane);
+            m_slicer.Slice(m_targetVertices, m_targetTriangles, slicePlane.Item1, slicePlane.Item2, slicePlane.Item3);
         });
         if(0 == m_slicer.m_tTriangles.Count || 0 == m_slicer.m_bTriangles.Count)
         {

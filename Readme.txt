@@ -1,3 +1,5 @@
+*This branch is working in progress.*
+
 Mesh Slicer Free on GitHub: https://github.com/hanzemeng/MeshSlicerFree/tree/main
 
 Mesh Slicer Free on Unity Asset Store: https://assetstore.unity.com/packages/slug/283149
