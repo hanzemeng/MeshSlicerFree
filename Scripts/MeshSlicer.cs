@@ -31,7 +31,7 @@ public class MeshSlicer
 
     private List<Material> m_targetMaterials;
 
-    public int MAX_SUBMESH_COUNT = 16; // must be strictly less than the number of submeshes in the target game object
+    public const int MAX_SUBMESH_COUNT = 16; // must be strictly less than the number of submeshes in the target game object
 
     public MeshSlicer()
     {

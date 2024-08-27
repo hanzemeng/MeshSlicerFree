@@ -35,12 +35,15 @@ public partial class ConstrainedDelaunayTriangulation
         m_inDomain.Clear();
     }
 
-    public float INPUT_VERTICES_RANGE = 10000f;
+    public const float INPUT_VERTICES_RANGE = 10000f;
     public void Triangulate(List<Vector2> vertices, List<int> edges, List<int> resTriangles)
     {
         Reset();
         DelaunayTriangulation(vertices);
-        SegmentRecovery(edges);
+        if(null != edges)
+        {
+            SegmentRecovery(edges);
+        }
         DomainCalculation();
 
         resTriangles.Clear();

@@ -24,8 +24,6 @@ public class MeshVertexDataMapper
     private List<BoneWeight> m_targetBoneWeights;
 
     
-
-
     public MeshVertexDataMapper()
     {
         m_sourcePositions = new List<Vector3>();
