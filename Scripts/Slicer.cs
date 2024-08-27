@@ -1,836 +1,320 @@
-//#define VERBOSE
-
-using System;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
-#if VERBOSE
-using System.Text;
-#endif
+using Hanzzz.MeshSlicerFree.RobustGeometry.Predicates;
 
 namespace Hanzzz.MeshSlicerFree
 {
-    public class Slicer
+
+public class Slicer
+{
+    public Slicer()
     {
-        private const float EPSILON = 0.00001f;
-        private class Vector3Comparator : IComparer<Vector3>
+        m_vertices = new();
+        //m_triangles = new(); do not uncomment
+        m_tTriangles = new();
+        m_bTriangles = new();
+        m_iVertices = new SortedDictionary<Vector2, ((Vector3,int,int,float), int)>(new Vector2Comparator());
+        m_iEdges = new();
+        m_iMappings = new();
+        m_iMappings.Add((-1,-1,-1)); // dummy
+
+        pn = new();
+    }
+    public void Reset()
+    {
+        m_vertices.Clear();
+        //m_triangles.Clear(); do not uncomment
+        m_tTriangles.Clear();
+        m_bTriangles.Clear();
+        m_iVertices.Clear();
+        m_iEdges.Clear();
+        m_iMappings.Clear();
+        m_iMappings.Add((-1,-1,-1)); // dummy
+
+        for(int i=0;i<3;i++)
         {
-            public int Compare(Vector3 a, Vector3 b)
-            {
-                if(a.x < b.x-EPSILON)
-                {
-                    return -1;
-                }
-                if(a.x > b.x+EPSILON)
-                {
-                    return 1;
-                }
-                if(a.y < b.y-EPSILON)
-                {
-                    return -1;
-                }
-                if(a.y > b.y+EPSILON)
-                {
-                    return 1;
-                }
-                if(a.z < b.z-EPSILON)
-                {
-                    return -1;
-                }
-                if(a.z > b.z+EPSILON)
-                {
-                    return 1;
-                }
-                return 0;
-            }
+            pp1[i] = 0d;
+            pp2[i] = 0d;
+            pp3[i] = 0d;
         }
+    }
 
-        private static List<Type> RETAIN_TYPES = new List<Type>{typeof(GameObject), typeof(Transform), typeof(MeshFilter), typeof(MeshRenderer)};
-        private static List<VertexAttribute>  UV_ATTRIBTES = new List<VertexAttribute> {VertexAttribute.TexCoord0, VertexAttribute.TexCoord1, VertexAttribute.TexCoord2, VertexAttribute.TexCoord3, VertexAttribute.TexCoord4, VertexAttribute.TexCoord5, VertexAttribute.TexCoord6, VertexAttribute.TexCoord7 };
-
-        private Plane slicePlane;
-
-        private GameObject originalGameObject;
-        private Matrix4x4 originalLocalToWorldMatrix;
-        private Matrix4x4 originalWorldToLocalMatrix;
-        private Mesh originalMesh;
-        private HashSet<VertexAttribute> originalVertexAttributes = new HashSet<VertexAttribute>();
-        private List<Vector3> originalVertices = new List<Vector3>();
-        private List<int> originalTriangles = new List<int>();
-        private List<List<Vector2>> originalUVs = new List<List<Vector2>> {new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>()};
-        private List<Color> originalColors = new List<Color>();
-
-        private int subMeshCount = 0;
-        private int currentSubMeshIndex = 0;
-
-        private List<Vector3> topVertices = new List<Vector3>();
-        private List<int> topSubMeshIndex = new List<int>();
-        private List<int> topTriangles = new List<int>();
-        private Dictionary<int, int> topIndexMapping = new Dictionary<int, int>();
-        private SortedDictionary<Vector3, int> topIntersectionIndexMapping = new SortedDictionary<Vector3, int>(new Vector3Comparator());
-        private int topIntersectionCount = 0;
-        private List<List<Vector3>> topIntersectionConnection = new List<List<Vector3>>();
-        private List<List<Vector2>> topUVs = new List<List<Vector2>> {new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>()};
-        private List<Color> topColors = new List<Color>();
-
-        private List<Vector3> bottomVertices = new List<Vector3>();
-        private List<int> bottomSubMeshIndex = new List<int>();
-        private List<int> bottomTriangles = new List<int>();
-        private Dictionary<int, int> bottomIndexMapping = new Dictionary<int, int>();
-        private SortedDictionary<Vector3, int> bottomIntersectionIndexMapping = new SortedDictionary<Vector3, int>(new Vector3Comparator());
-        private int bottomIntersectionCount = 0;
-        private List<List<Vector3>> bottomIntersectionConnection = new List<List<Vector3>>();
-        private List<List<Vector2>> bottomUVs = new List<List<Vector2>> {new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>(),new List<Vector2>()};
-        private List<Color> bottomColors = new List<Color>();
-
-
-        public class SliceReturnValue
+    public void Slice(IReadOnlyList<Vector3> vertices, List<int> triangles, Plane p)
+    {
+        Vector3 xAxis;
+        if(0f != p.normal.x)
         {
-            public GameObject topGameObject;
-            public GameObject bottomGameObject;
+            xAxis = new Vector3(-p.normal.y/p.normal.x, 1f, 0f);
         }
-
-        public async Task<SliceReturnValue> SliceAsync(GameObject originalGameObject, Plane slicePlane, Material intersectionMaterial)
+        else if(0f != p.normal.y)
         {
-            CopyOriginalData(originalGameObject, slicePlane);
+            xAxis = new Vector3(0f, -p.normal.z/p.normal.y, 1f);
+        }
+        else
+        {
+            xAxis = new Vector3(1f, 0f, -p.normal.x/p.normal.z);
+        }
+        Vector3 yAxis = Vector3.Cross(p.normal, xAxis);
+
+        Slice(vertices, triangles, -p.distance*p.normal, -p.distance*p.normal+xAxis, -p.distance*p.normal+yAxis);
+    }
+    public void Slice(IReadOnlyList<Vector3> vertices, List<int> triangles, Vector3 p1, Vector3 p2, Vector3 p3)
+    {
+        Reset();
+        m_vertices = vertices.Select(x=>new Point3D(x)).ToList();
+        m_triangles = triangles;
+        pp1[0] = (double)p1.x;
+        pp1[1] = (double)p1.z; // swap y and z for predicates to work
+        pp1[2] = (double)p1.y; // swap y and z for predicates to work
+        pp2[0] = (double)p2.x;
+        pp2[1] = (double)p2.z; // swap y and z for predicates to work
+        pp2[2] = (double)p2.y; // swap y and z for predicates to work
+        pp3[0] = (double)p3.x;
+        pp3[1] = (double)p3.z; // swap y and z for predicates to work
+        pp3[2] = (double)p3.y; // swap y and z for predicates to work
+        pn = Point3D.Cross(new Point3D(p3) - new Point3D(p2), new Point3D(p2) - new Point3D(p1));
+        pn.Normalize();
+        px = pn.GetPerpendicular();
+        px.Normalize();
+        py = Point3D.Cross(pn, px);
+        py.Normalize();
+        //(new GameObject()).transform.position = CalculateIntersection(0,1).Item1.ToVector3()
+
+        for(int i=0; i<triangles.Count; i+=3)
+        {
+            int o0 = Orient3D(triangles[i+0]);
+            int o1 = Orient3D(triangles[i+1]);
+            int o2 = Orient3D(triangles[i+2]);
             
-            for(currentSubMeshIndex=0; currentSubMeshIndex<subMeshCount; currentSubMeshIndex++)
-            {
-                originalMesh.GetTriangles(originalTriangles, currentSubMeshIndex);
-                await Task.Run(()=>LoopThroughTriangles());
-            }
-        
-            await Task.Run(()=>FillIntersection(topIntersectionConnection, true));
-            await Task.Run(()=>FillIntersection(bottomIntersectionConnection, false));
-
-            return CreateNewGameObjects(intersectionMaterial);
-        }
-        public SliceReturnValue Slice(GameObject originalGameObject, Plane slicePlane, Material intersectionMaterial)
-        {
-            CopyOriginalData(originalGameObject, slicePlane);
+            //StringBuilder sb = new StringBuilder();
+            //sb.Append(vertices[triangles[i+0]]);
+            //sb.Append("\n");
+            //sb.Append(vertices[triangles[i+1]]);
+            //sb.Append("\n");
+            //sb.Append(vertices[triangles[i+2]]);
             
-            for(currentSubMeshIndex=0; currentSubMeshIndex<subMeshCount; currentSubMeshIndex++)
+
+            if(0 == o0 && 0 == o1 && 0 == o2)
             {
-                originalMesh.GetTriangles(originalTriangles, currentSubMeshIndex);
-                LoopThroughTriangles();
-            }
-        
-            FillIntersection(topIntersectionConnection, true);
-            FillIntersection(bottomIntersectionConnection, false);
-
-            return CreateNewGameObjects(intersectionMaterial);
-        }
-
-        private void CopyOriginalData(GameObject originalGameObject, Plane slicePlane)
-        {
-            this.originalGameObject = originalGameObject;
-            this.slicePlane = slicePlane;
-            originalLocalToWorldMatrix = originalGameObject.transform.localToWorldMatrix;
-            originalWorldToLocalMatrix = originalGameObject.transform.worldToLocalMatrix;
-
-            originalMesh = originalGameObject.GetComponent<MeshFilter>().sharedMesh;
-            originalMesh.GetVertices(originalVertices);
-            originalVertexAttributes.Clear();
-            for(int i=0; i<8; i++)
-            {
-                if(!originalMesh.HasVertexAttribute(UV_ATTRIBTES[i]))
-                {
-                    break;
-                }
-                originalVertexAttributes.Add(UV_ATTRIBTES[i]);
-                originalMesh.GetUVs(i, originalUVs[i]);
-            }
-            if(originalMesh.HasVertexAttribute(VertexAttribute.Color))
-            {
-                originalVertexAttributes.Add(VertexAttribute.Color);
-                originalMesh.GetColors(originalColors);
-            }
-            subMeshCount = originalMesh.subMeshCount;
-
-            topVertices.Clear();
-            topSubMeshIndex.Clear();
-            topTriangles.Clear();
-            topIndexMapping.Clear();
-            topIntersectionIndexMapping.Clear();
-            topIntersectionCount = 0;
-            topIntersectionConnection.Clear();
-            topUVs.ForEach(x=>x.Clear());
-            topColors.Clear();
-
-            bottomVertices.Clear();
-            bottomSubMeshIndex.Clear();
-            bottomTriangles.Clear();
-            bottomIndexMapping.Clear();
-            bottomIntersectionIndexMapping.Clear();
-            bottomIntersectionCount = 0;
-            bottomIntersectionConnection.Clear();
-            bottomUVs.ForEach(x=>x.Clear());
-            bottomColors.Clear();
-        }
-
-        private void LoopThroughTriangles()
-        {
-            bool vertexOneSide, vertexTwoSide, vertexThreeSide;
-            for(int i=0; i<originalTriangles.Count; i+=3)
-            {
-                vertexOneSide = slicePlane.GetSide(originalLocalToWorldMatrix.MultiplyPoint3x4(originalVertices[originalTriangles[i]]));
-                vertexTwoSide = slicePlane.GetSide(originalLocalToWorldMatrix.MultiplyPoint3x4(originalVertices[originalTriangles[i+1]]));
-                vertexThreeSide = slicePlane.GetSide(originalLocalToWorldMatrix.MultiplyPoint3x4(originalVertices[originalTriangles[i+2]]));
-
-                if(vertexOneSide && vertexTwoSide && vertexThreeSide)
-                {
-                    for(int j=i; j<i+3; j++)
-                    {
-                        topTriangles.Add(TopGetMapping(originalTriangles[j]));
-                    }
-                }
-                else if(!vertexOneSide && !vertexTwoSide && !vertexThreeSide)
-                {
-                    for(int j=i; j<i+3; j++)
-                    {
-                        bottomTriangles.Add(BottomGetMapping(originalTriangles[j]));
-                    }
-                }
-                else
-                {
-                    if(vertexTwoSide == vertexThreeSide)
-                    {
-                        AddIntersections(originalTriangles[i], originalTriangles[i+1], originalTriangles[i+2], vertexOneSide);
-                    }
-                    else if(vertexOneSide == vertexThreeSide)
-                    {
-                        AddIntersections(originalTriangles[i+1], originalTriangles[i+2], originalTriangles[i], vertexTwoSide);
-                    }
-                    else
-                    {
-                        AddIntersections(originalTriangles[i+2], originalTriangles[i], originalTriangles[i+1], vertexThreeSide);
-                    }
-                }
-            }
-        }
-
-        private void FillIntersection(List<List<Vector3>> intersection, bool isTop)
-        {
-            List<List<Vector3>> intersectionWorld = intersection.Select(x=>x.Select(y=> originalLocalToWorldMatrix.MultiplyPoint3x4(y)).ToList()).ToList();
-            (Vector3, Vector3, Vector3) plane = PlaneProjection.GetPlane(intersectionWorld[0],slicePlane.normal);
-            ContourTree contourTree = new ContourTree();
-            for(int i = 0; i<intersection.Count; i++)
-            {
-                List<Vector2> contourIntersection = PlaneProjection.Get2DProjection(intersectionWorld[i],slicePlane.normal,plane.Item1,plane.Item2,plane.Item3).ToList();
-                List<int> mapping;
-                if(isTop)
-                {
-                    mapping = intersection[i].Select(x=>topIntersectionIndexMapping[x]).ToList();
-                }
-                else
-                {
-                    mapping = intersection[i].Select(x=>bottomIntersectionIndexMapping[x]).ToList();
-                }
-
-                float area = 0f;
-                int last = contourIntersection.Count-1;
-                for(int current=0; current<contourIntersection.Count; current++)
-                {
-                    area += (contourIntersection[last].x + contourIntersection[current].x) * (contourIntersection[last].y - contourIntersection[current].y);
-                    last = current;
-                }
-            
-                if(area > EPSILON)
-                {
-                    contourIntersection.Reverse();
-                    mapping.Reverse();
-                }
-
-                #if VERBOSE
-                Debug.Log(area);
-                StringBuilder str = new StringBuilder();
-                for(int j = 0; j<intersection[i].Count; j++)
-                {
-                    str.Append($"{contourIntersection[j].x.ToString("F7")}, {contourIntersection[j].y.ToString("F7")}\n");
-                }
-                Debug.Log(str.ToString());
-                #endif
-                contourTree.AddContour(contourIntersection, mapping);
+                // the triangle is part of the slice plane
+                continue;
             }
 
-            TraverseContourTree(contourTree, true, isTop);
-        }
-
-        private SliceReturnValue CreateNewGameObjects(Material intersectionMaterial)
-        {
-            GameObject topGameObject = UnityEngine.Object.Instantiate(originalGameObject);
-            Component[] components = topGameObject.GetComponents<Component>();
-            foreach(Component component in components)
+            if((1 == o0 && 1 == o1 && 1 == o2) ||
+               (0 == o0 && 1 == o1 && 1 == o2) ||
+               (1 == o0 && 0 == o1 && 1 == o2) ||
+               (1 == o0 && 1 == o1 && 0 == o2))
             {
-                if(RETAIN_TYPES.Contains(component.GetType()))
-                {
-                    continue;
-                }
-                UnityEngine.Object.DestroyImmediate(component);
+                CopyTriangle(m_tTriangles, triangles, i);
+                continue;
             }
-            GameObject bottomGameObject = UnityEngine.Object.Instantiate(topGameObject);
-
-            topGameObject.GetComponent<MeshRenderer>().materials = topGameObject.GetComponent<MeshRenderer>().materials.Concat(new Material[]{intersectionMaterial}).ToArray();
-            Mesh topMesh = new Mesh();
-            topMesh.vertices=topVertices.ToArray();
-            for(int i=0; i<8; i++)
+            if((-1 == o0 && -1 == o1 && -1 == o2) ||
+               (0 == o0 && -1 == o1 && -1 == o2) ||
+               (-1 == o0 && 0 == o1 && -1 == o2) ||
+               (-1 == o0 && -1 == o1 && 0 == o2))
             {
-                if(!originalVertexAttributes.Contains(UV_ATTRIBTES[i]))
-                {
-                    break;
-                }
-                topMesh.SetUVs(i, topUVs[i]);
-            }
-            if(originalVertexAttributes.Contains(VertexAttribute.Color))
-            {
-                topMesh.SetColors(topColors);
-            }
-            topMesh.subMeshCount = subMeshCount+1;
-            for(int i = 0; i<=subMeshCount; i++)
-            {
-                topMesh.SetTriangles(topTriangles.Where((x) => i==topSubMeshIndex[x]).ToArray(),i);
-            }
-            topMesh.RecalculateNormals();
-            topMesh.RecalculateTangents();
-            topMesh.Optimize();
-            topGameObject.GetComponent<MeshFilter>().mesh = topMesh;
-
-            bottomGameObject.GetComponent<MeshRenderer>().materials = bottomGameObject.GetComponent<MeshRenderer>().materials.Concat(new Material[]{intersectionMaterial}).ToArray();
-            Mesh bottomMesh = new Mesh();
-            bottomMesh.vertices=bottomVertices.ToArray();
-            for(int i=0; i<8; i++)
-            {
-                if(!originalVertexAttributes.Contains(UV_ATTRIBTES[i]))
-                {
-                    break;
-                }
-                bottomMesh.SetUVs(i, bottomUVs[i]);
-            }
-            if(originalVertexAttributes.Contains(VertexAttribute.Color))
-            {
-                bottomMesh.SetColors(bottomColors);
-            }
-            bottomMesh.subMeshCount = subMeshCount+1;
-            for(int i = 0; i<=subMeshCount; i++)
-            {
-                bottomMesh.SetTriangles(bottomTriangles.Where((x) => i==bottomSubMeshIndex[x]).ToArray(),i);
-            }
-            bottomMesh.RecalculateNormals();
-            bottomMesh.RecalculateTangents();
-            bottomMesh.Optimize();
-            bottomGameObject.GetComponent<MeshFilter>().mesh = bottomMesh;
-
-            return new SliceReturnValue{topGameObject=topGameObject, bottomGameObject=bottomGameObject};
-        }
-
-        private void TraverseContourTree(ContourTree current, bool shouldSkip, bool isTop)
-        {
-            if(shouldSkip)
-            {
-                goto TraverseContourTree_NEXT;
+                CopyTriangle(m_bTriangles, triangles, i);
+                continue;
             }
 
-            List<List<Vector2>> triangulationPoint = new List<List<Vector2>>();
-            List<List<int>> triangulationMapping = new List<List<int>>();
-
-            triangulationPoint.Add(current.contour);
-            triangulationMapping.Add(current.contourId);
-
-            foreach(ContourTree contourTree in current.children)
+            // both on vertex
+            if(0 == o0 && 0 == o1)
             {
-                contourTree.contour.Reverse();
-                contourTree.contourId.Reverse();
-                triangulationPoint.Add(contourTree.contour);
-                triangulationMapping.Add(contourTree.contourId);
+                TwoVertexHelper(1 == o2, i,0,1);
             }
-
-            (int, int[,]) triangulationRes = Triangulation.Triangulate(triangulationPoint);
-            if(isTop)
+            else if(0 == o0 && 0 == o2)
             {
-                for(int i=0; i<triangulationRes.Item1; i++)
-                {
-                    for(int j=2; j>=0; j--)
-                    {
-                        int pointIndex = triangulationRes.Item2[i,j]-1;
-                        for(int k=0; k<triangulationMapping.Count; k++)
-                        {
-                            if(pointIndex>=triangulationMapping[k].Count)
-                            {
-                                pointIndex -= triangulationMapping[k].Count;
-                            }
-                            else
-                            {
-                                topTriangles.Add(topIndexMapping[triangulationMapping[k][pointIndex]]);
-                                break;
-                            }
-                        }
-                    }
-                }
+                TwoVertexHelper(1 == o1, i,0,2);
             }
-            else
+            else if(0 == o1 && 0 == o2)
             {
-                for(int i=0; i<triangulationRes.Item1; i++)
-                {
-                    for(int j=0; j<3; j++)
-                    {
-                        int pointIndex = triangulationRes.Item2[i,j]-1;
-                        for(int k=0; k<triangulationMapping.Count; k++)
-                        {
-                            if(pointIndex>=triangulationMapping[k].Count)
-                            {
-                                pointIndex -= triangulationMapping[k].Count;
-                            }
-                            else
-                            {
-                                bottomTriangles.Add(bottomIndexMapping[triangulationMapping[k][pointIndex]]);
-                                break;
-                            }
-                        }
-                    }
-                }
+                TwoVertexHelper(1 == o0, i,1,2);
             }
-
-            TraverseContourTree_NEXT:
-            foreach(ContourTree child in current.children)
+            // one on vertex, the other on edge
+            else if(0 == o0)
             {
-                TraverseContourTree(child, !shouldSkip, isTop);
+                OneVertexOneEdgeHelper(1 == o1, i, 0, 1, 2);
             }
-        }
-
-        private void AddIntersections(int originalIndexPivot, int originalIndexOne, int originalIndexTwo, bool isTop)
-        {
-            int vertexOne, vertexTwo, vertexThree;
-            int intersectionVertexOne, intersectionVertexTwo;
-            (Vector3, float) intersectionOne, intersectionTwo;
-
-            intersectionOne = GetIntersection(originalIndexPivot, originalIndexOne);
-            intersectionTwo = GetIntersection(originalIndexPivot, originalIndexTwo);
-
-            TopGetIntersectionMapping(intersectionOne.Item1);
-            TopGetIntersectionMapping(intersectionTwo.Item1);
-            ConnectIntersection(intersectionOne.Item1, intersectionTwo.Item1, topIntersectionConnection);
-            BottomGetIntersectionMapping(intersectionOne.Item1);
-            BottomGetIntersectionMapping(intersectionTwo.Item1);
-            ConnectIntersection(intersectionOne.Item1, intersectionTwo.Item1, bottomIntersectionConnection);
-
-            if(isTop)
+            else if(0 == o1)
             {
-                vertexOne = TopGetMapping(originalIndexPivot);
-                intersectionVertexOne = TopGetMapping(originalIndexPivot, originalIndexOne, intersectionOne.Item1, intersectionOne.Item2);
-                intersectionVertexTwo = TopGetMapping(originalIndexPivot, originalIndexTwo, intersectionTwo.Item1, intersectionTwo.Item2);
-
-                topTriangles.Add(vertexOne);
-                topTriangles.Add(intersectionVertexOne);
-                topTriangles.Add(intersectionVertexTwo);
-
-                vertexTwo = BottomGetMapping(originalIndexOne);
-                vertexThree = BottomGetMapping(originalIndexTwo);
-
-                intersectionVertexOne = BottomGetMapping(originalIndexPivot, originalIndexOne, intersectionOne.Item1, intersectionOne.Item2);
-                intersectionVertexTwo = BottomGetMapping(originalIndexPivot, originalIndexTwo, intersectionTwo.Item1, intersectionTwo.Item2);
-
-                bottomTriangles.Add(intersectionVertexOne);
-                bottomTriangles.Add(vertexTwo);
-                bottomTriangles.Add(vertexThree);
-                bottomTriangles.Add(intersectionVertexOne);
-                bottomTriangles.Add(vertexThree);
-                bottomTriangles.Add(intersectionVertexTwo);
+                OneVertexOneEdgeHelper(1 == o2, i, 1, 2, 0);
             }
-            else
+            else if(0 == o2)
             {
-                vertexOne = BottomGetMapping(originalIndexPivot);
-                intersectionVertexOne = BottomGetMapping(originalIndexPivot, originalIndexOne, intersectionOne.Item1, intersectionOne.Item2);
-                intersectionVertexTwo = BottomGetMapping(originalIndexPivot, originalIndexTwo, intersectionTwo.Item1, intersectionTwo.Item2);
-
-                bottomTriangles.Add(vertexOne);
-                bottomTriangles.Add(intersectionVertexOne);
-                bottomTriangles.Add(intersectionVertexTwo);
-
-
-                vertexTwo = TopGetMapping(originalIndexOne);
-                vertexThree = TopGetMapping(originalIndexTwo);
-
-                intersectionVertexOne = TopGetMapping(originalIndexPivot, originalIndexOne, intersectionOne.Item1, intersectionOne.Item2);
-                intersectionVertexTwo = TopGetMapping(originalIndexPivot, originalIndexTwo, intersectionTwo.Item1, intersectionTwo.Item2);
-
-                topTriangles.Add(intersectionVertexOne);
-                topTriangles.Add(vertexTwo);
-                topTriangles.Add(vertexThree);
-                topTriangles.Add(intersectionVertexOne);
-                topTriangles.Add(vertexThree);
-                topTriangles.Add(intersectionVertexTwo);
+                OneVertexOneEdgeHelper(1 == o0, i, 2, 0, 1);
             }
-        }
-
-        private (Vector3, float) GetIntersection(int originVertexIndex, int targetVertexIndex)
-        {
-            Vector3 origin = originalLocalToWorldMatrix.MultiplyPoint3x4(originalVertices[originVertexIndex]);
-            Vector3 traget = originalLocalToWorldMatrix.MultiplyPoint3x4(originalVertices[targetVertexIndex]);
-            Vector3 distance = traget-origin;
-            Ray ray = new Ray(origin, distance.normalized);
-
-            float rayDistance;
-            slicePlane.Raycast(ray,out rayDistance);
-            return (originalWorldToLocalMatrix.MultiplyPoint3x4(ray.GetPoint(rayDistance)), rayDistance/distance.magnitude);
-        }
-
-        private void ConnectIntersection(Vector3 intersectionOne, Vector3 intersectionTwo, List<List<Vector3>> intersectionConnection)
-        {
-            Vector3Comparator vector3Comparator = new Vector3Comparator();
-            (int, int) intersectionOneIndex = (-1,-1);
-            (int, int) intersectionTwoIndex = (-1,-1);
-            for(int i=0; i<intersectionConnection.Count; i++)
+            // both on edge
+            else if(o0 != o1 && o0 != o2)
             {
-                if(0 == vector3Comparator.Compare(intersectionOne, intersectionConnection[i][0]))
-                {
-                    intersectionOneIndex = (i,0);
-                    if((-1,-1) != intersectionTwoIndex)
-                    {
-                        break;
-                    }
-                }
-                else if(0 == vector3Comparator.Compare(intersectionOne, intersectionConnection[i][^1]))
-                {
-                    intersectionOneIndex = (i,intersectionConnection[i].Count-1);
-                    if((-1,-1) != intersectionTwoIndex)
-                    {
-                        break;
-                    }
-                }
-
-                if(0 == vector3Comparator.Compare(intersectionTwo, intersectionConnection[i][0]))
-                {
-                    intersectionTwoIndex = (i,0);
-                    if((-1,-1) != intersectionOneIndex)
-                    {
-                        break;
-                    }
-                }
-                else if(0 == vector3Comparator.Compare(intersectionTwo, intersectionConnection[i][^1]))
-                {
-                    intersectionTwoIndex = (i,intersectionConnection[i].Count-1);
-                    if((-1,-1) != intersectionOneIndex)
-                    {
-                        break;
-                    }
-                }
+                TwoEdgeHelper(1 == o0, i, 0, 1, 2);
             }
-
-            if((-1,-1) == intersectionOneIndex && (-1,-1) == intersectionTwoIndex)
+            else if(o1 != o0 && o1 != o2)
             {
-                intersectionConnection.Add(new List<Vector3>{intersectionOne, intersectionTwo});
+                TwoEdgeHelper(1 == o1, i, 1, 2, 0);
             }
-            else if((-1,-1) != intersectionOneIndex && (-1,-1) == intersectionTwoIndex)
+            else if(o2 != o0 && o2 != o1)
             {
-                if(Polygon.IsStraightReturn.STRAIGHT == Polygon.IsStraight(intersectionConnection[intersectionOneIndex.Item1]))
-                {
-                    Vector3 newEdge, oldEdge, cross;
-
-                    if(0 == intersectionOneIndex.Item2)
-                    {
-                        newEdge = intersectionOne - intersectionTwo;
-                        oldEdge = intersectionConnection[intersectionOneIndex.Item1][1] - intersectionOne;
-                        cross = Vector3.Cross(newEdge, oldEdge);
-                    }
-                    else
-                    {
-                        newEdge = intersectionTwo - intersectionOne;
-                        oldEdge = intersectionOne-intersectionConnection[intersectionOneIndex.Item1][intersectionOneIndex.Item2-1];
-                        cross = Vector3.Cross(oldEdge, newEdge);
-                    }
-                    float direction = Vector3.Dot(cross, slicePlane.normal);
-                    if(direction<-EPSILON)
-                    {
-                        intersectionConnection[intersectionOneIndex.Item1].Reverse();
-                        if(0 != intersectionOneIndex.Item2)
-                        {
-                            intersectionConnection[intersectionOneIndex.Item1].Insert(0,intersectionTwo);
-                        }
-                        else
-                        {
-                            intersectionConnection[intersectionOneIndex.Item1].Add(intersectionTwo);
-                        }
-                    }
-                    else
-                    {
-                        if(0 != intersectionOneIndex.Item2)
-                        {
-                            intersectionConnection[intersectionOneIndex.Item1].Add(intersectionTwo);
-                        }
-                        else
-                        {
-                            intersectionConnection[intersectionOneIndex.Item1].Insert(0,intersectionTwo);
-                        }
-                    }
-                }
-                else
-                {
-                    if(0 != intersectionOneIndex.Item2)
-                    {
-                        intersectionConnection[intersectionOneIndex.Item1].Add(intersectionTwo);
-                    }
-                    else
-                    {
-                        intersectionConnection[intersectionOneIndex.Item1].Insert(0,intersectionTwo);
-                    }
-                }
-            }
-            else if((-1,-1) == intersectionOneIndex && (-1,-1) != intersectionTwoIndex)
-            {
-                if(Polygon.IsStraightReturn.STRAIGHT == Polygon.IsStraight(intersectionConnection[intersectionTwoIndex.Item1]))
-                {
-                    Vector3 newEdge, oldEdge, cross;
-
-                    if(0 == intersectionTwoIndex.Item2)
-                    {
-                        newEdge = intersectionTwo - intersectionOne;
-                        oldEdge = intersectionConnection[intersectionTwoIndex.Item1][1] - intersectionTwo;
-                        cross = Vector3.Cross(newEdge, oldEdge);
-                    }
-                    else
-                    {
-                        newEdge = intersectionOne - intersectionTwo;
-                        oldEdge = intersectionTwo-intersectionConnection[intersectionTwoIndex.Item1][intersectionTwoIndex.Item2-1];
-                        cross = Vector3.Cross(oldEdge, newEdge);
-                    }
-                    float direction = Vector3.Dot(cross, slicePlane.normal);
-                    if(direction<-EPSILON)
-                    {
-                        intersectionConnection[intersectionTwoIndex.Item1].Reverse();
-                        if(0 != intersectionTwoIndex.Item2)
-                        {
-                            intersectionConnection[intersectionTwoIndex.Item1].Insert(0,intersectionOne);
-                        }
-                        else
-                        {
-                            intersectionConnection[intersectionTwoIndex.Item1].Add(intersectionOne);
-                        }
-                    }
-                    else
-                    {
-                        if(0 != intersectionTwoIndex.Item2)
-                        {
-                            intersectionConnection[intersectionTwoIndex.Item1].Add(intersectionOne);
-                        }
-                        else
-                        {
-                            intersectionConnection[intersectionTwoIndex.Item1].Insert(0,intersectionOne);
-                        }
-                    }
-                }
-                else
-                {
-                    if(0 != intersectionTwoIndex.Item2)
-                    {
-                        intersectionConnection[intersectionTwoIndex.Item1].Add(intersectionOne);
-                    }
-                    else
-                    {
-                        intersectionConnection[intersectionTwoIndex.Item1].Insert(0,intersectionOne);
-                    }
-                }
-            }
-            else
-            {
-                if(intersectionOneIndex.Item1 == intersectionTwoIndex.Item1)
-                {
-                    return;
-                }
-
-                if(0 == intersectionOneIndex.Item2)
-                {
-                    if(0 == intersectionTwoIndex.Item2)
-                    {
-                        intersectionConnection[intersectionOneIndex.Item1].Reverse();
-                        intersectionConnection[intersectionOneIndex.Item1].AddRange(intersectionConnection[intersectionTwoIndex.Item1]);
-                    }
-                    else
-                    {
-                        intersectionConnection[intersectionOneIndex.Item1].InsertRange(0,intersectionConnection[intersectionTwoIndex.Item1]);
-                    }
-                }
-                else
-                {
-                    if(0 == intersectionTwoIndex.Item2)
-                    {
-                        intersectionConnection[intersectionOneIndex.Item1].AddRange(intersectionConnection[intersectionTwoIndex.Item1]);
-                    }
-                    else
-                    {
-                        intersectionConnection[intersectionTwoIndex.Item1].Reverse();
-                        intersectionConnection[intersectionOneIndex.Item1].AddRange(intersectionConnection[intersectionTwoIndex.Item1]);
-                    }
-                }
-                intersectionConnection.RemoveAt(intersectionTwoIndex.Item1);
-            }
-        }
-
-        private int TopGetMapping(int originalVertexIndex)
-        {
-            if(!topIndexMapping.ContainsKey(originalVertexIndex))
-            {
-                topIndexMapping[originalVertexIndex] = topVertices.Count;
-
-                TopCopyVertex(originalVertexIndex);
-            }
-            return topIndexMapping[originalVertexIndex];
-        }
-        private void TopCopyVertex(int originalVertexIndex)
-        {
-            topVertices.Add(originalVertices[originalVertexIndex]);
-            topSubMeshIndex.Add(currentSubMeshIndex);
-            for(int i=0; i<8; i++)
-            {
-                if(!originalVertexAttributes.Contains(UV_ATTRIBTES[i]))
-                {
-                    break;
-                }
-                topUVs[i].Add(originalUVs[i][originalVertexIndex]);
-            }
-            if(originalVertexAttributes.Contains(VertexAttribute.Color))
-            {
-                topColors.Add(originalColors[originalVertexIndex]);
-            }
-        }
-        private int TopGetMapping(int originalVertexIndex, int targetVertexIndex, Vector3 topIntersection, float interpolationAmount)
-        {
-            int res = topVertices.Count;
-
-            topVertices.Add(topIntersection);
-            topSubMeshIndex.Add(currentSubMeshIndex);
-            TopInterpolateVertex(originalVertexIndex, targetVertexIndex, interpolationAmount);
-
-            return res;
-        }
-        private void TopInterpolateVertex(int originalVertexIndex, int targetVertexIndex, float interpolationAmount)
-        {
-            for(int i=0; i<8; i++)
-            {
-                if(!originalVertexAttributes.Contains(UV_ATTRIBTES[i]))
-                {
-                    break;
-                }
-                topUVs[i].Add(Vector2.Lerp(originalUVs[i][originalVertexIndex], originalUVs[i][targetVertexIndex], interpolationAmount));
-            }
-            if(originalVertexAttributes.Contains(VertexAttribute.Color))
-            {
-                topColors.Add(Color.Lerp(originalColors[originalVertexIndex], originalColors[targetVertexIndex], interpolationAmount));
-            }
-        }
-        private int TopGetIntersectionMapping(Vector3 topIntersection)
-        {
-            if(!topIntersectionIndexMapping.ContainsKey(topIntersection))
-            {
-                topIntersectionCount++;
-                topIntersectionIndexMapping[topIntersection] = -topIntersectionCount;
-                topIndexMapping[topIntersectionIndexMapping[topIntersection]] = topVertices.Count;
-
-                topVertices.Add(topIntersection);
-                topSubMeshIndex.Add(subMeshCount);
-                TopIntersectionInterpolateVertex();
-            }
-
-            return topIndexMapping[topIntersectionIndexMapping[topIntersection]];
-        }
-        private void TopIntersectionInterpolateVertex() // temp
-        {
-            for(int i=0; i<8; i++)
-            {
-                if(!originalVertexAttributes.Contains(UV_ATTRIBTES[i]))
-                {
-                    break;
-                }
-                topUVs[i].Add(Vector2.zero);
-            }
-            if(originalVertexAttributes.Contains(VertexAttribute.Color))
-            {
-                topColors.Add(Color.white);
-            }
-        }
-
-        private int BottomGetMapping(int originalVertexIndex)
-        {
-            if(!bottomIndexMapping.ContainsKey(originalVertexIndex))
-            {
-                bottomIndexMapping[originalVertexIndex] = bottomVertices.Count;
-
-                BottomCopyVertex(originalVertexIndex);
-            }
-            return bottomIndexMapping[originalVertexIndex];
-        }
-        private void BottomCopyVertex(int originalVertexIndex)
-        {
-            bottomVertices.Add(originalVertices[originalVertexIndex]);
-            bottomSubMeshIndex.Add(currentSubMeshIndex);
-            for(int i=0; i<8; i++)
-            {
-                if(!originalVertexAttributes.Contains(UV_ATTRIBTES[i]))
-                {
-                    break;
-                }
-                bottomUVs[i].Add(originalUVs[i][originalVertexIndex]);
-            }
-            if(originalVertexAttributes.Contains(VertexAttribute.Color))
-            {
-                bottomColors.Add(originalColors[originalVertexIndex]);
-            }
-        }
-        private int BottomGetMapping(int originalVertexIndex, int targetVertexIndex, Vector3 bottomIntersection, float interpolationAmount)
-        {
-            int res = bottomVertices.Count;
-
-            bottomVertices.Add(bottomIntersection);
-            bottomSubMeshIndex.Add(currentSubMeshIndex);
-            BottomInterpolateVertex(originalVertexIndex, targetVertexIndex, interpolationAmount);
-
-            return res;
-        }
-        private void BottomInterpolateVertex(int originalVertexIndex, int targetVertexIndex, float interpolationAmount)
-        {
-            for(int i=0; i<8; i++)
-            {
-                if(!originalVertexAttributes.Contains(UV_ATTRIBTES[i]))
-                {
-                    break;
-                }
-                bottomUVs[i].Add(Vector2.Lerp(originalUVs[i][originalVertexIndex], originalUVs[i][targetVertexIndex], interpolationAmount));
-            }
-            if(originalVertexAttributes.Contains(VertexAttribute.Color))
-            {
-                bottomColors.Add(Color.Lerp(originalColors[originalVertexIndex], originalColors[targetVertexIndex], interpolationAmount));
-            }
-        }
-        private int BottomGetIntersectionMapping(Vector3 bottomIntersection)
-        {
-            if(!bottomIntersectionIndexMapping.ContainsKey(bottomIntersection))
-            {
-                bottomIntersectionCount++;
-                bottomIntersectionIndexMapping[bottomIntersection] = -bottomIntersectionCount;
-                bottomIndexMapping[bottomIntersectionIndexMapping[bottomIntersection]] = bottomVertices.Count;
-
-                bottomVertices.Add(bottomIntersection);
-                bottomSubMeshIndex.Add(subMeshCount);
-                BottomIntersectionInterpolateVertex();
-            }
-
-            return bottomIndexMapping[bottomIntersectionIndexMapping[bottomIntersection]];
-        }
-        private void BottomIntersectionInterpolateVertex() // temp
-        {
-            for(int i=0; i<8; i++)
-            {
-                if(!originalVertexAttributes.Contains(UV_ATTRIBTES[i]))
-                {
-                    break;
-                }
-                bottomUVs[i].Add(Vector2.zero);
-            }
-            if(originalVertexAttributes.Contains(VertexAttribute.Color))
-            {
-                bottomColors.Add(Color.white);
+                TwoEdgeHelper(1 == o2, i, 2, 0, 1);
             }
         }
     }
+
+    // p1i, p2i are the offset of the two vertices on the slice plane
+    private void TwoVertexHelper(bool isTop, int i, int p1i, int p2i)
+    {
+        if(isTop)
+        {
+            CopyTriangle(m_tTriangles, m_triangles, i);
+        }
+        else
+        {
+            CopyTriangle(m_bTriangles, m_triangles, i);
+        }
+
+        m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p1i]],m_triangles[i+p1i],0,0d));
+        m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p2i]],m_triangles[i+p2i],0,0d));
+    }
+    // p0i is the offset of the vertex on the slice plane. p1i and p2i are in order of the triangle
+    // isTop is true if p1i is above the slice plane
+    private void OneVertexOneEdgeHelper(bool isTop, int i, int p0i, int p1i, int p2i)
+    {
+        (Point3D, double) inter = CalculateIntersection(m_triangles[i+p1i],m_triangles[i+p2i]);
+        int pi = m_iMappings.Count;
+        m_iMappings.Add((m_triangles[i+p1i],m_triangles[i+p2i],inter.Item2));
+
+        if(isTop)
+        {
+            m_tTriangles.Add(m_triangles[i+p0i]);
+            m_tTriangles.Add(m_triangles[i+p1i]);
+            m_tTriangles.Add(-pi);
+            m_bTriangles.Add(m_triangles[i+p0i]);
+            m_bTriangles.Add(-pi);
+            m_bTriangles.Add(m_triangles[i+p2i]);
+        }
+        else
+        {
+            m_bTriangles.Add(m_triangles[i+p0i]);
+            m_bTriangles.Add(m_triangles[i+p1i]);
+            m_bTriangles.Add(-pi);
+            m_tTriangles.Add(m_triangles[i+p0i]);
+            m_tTriangles.Add(-pi);
+            m_tTriangles.Add(m_triangles[i+p2i]);
+        }
+
+        m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p0i]],m_triangles[i+p0i],0,0d));
+        m_iEdges.Add(AddIntersectionVertex(inter.Item1,m_triangles[i+p1i],m_triangles[i+p2i],inter.Item2));
+    }
+    // p0i is the offset of the vertex on the different side of p1i and p2i. p1i and p2i are in order of the triangle
+    // isTop is true if p0i is above the slice plane
+    private void TwoEdgeHelper(bool isTop, int i, int p0i, int p1i, int p2i)
+    {
+        (Point3D, double) inter1 = CalculateIntersection(m_triangles[i+p0i],m_triangles[i+p1i]);
+        (Point3D, double) inter2 = CalculateIntersection(m_triangles[i+p0i],m_triangles[i+p2i]);
+        int pi1 = m_iMappings.Count;
+        m_iMappings.Add((m_triangles[i+p0i],m_triangles[i+p1i],inter1.Item2));
+        int pi2 = m_iMappings.Count;
+        m_iMappings.Add((m_triangles[i+p0i],m_triangles[i+p2i],inter2.Item2));
+
+        if(isTop)
+        {
+            m_tTriangles.Add(m_triangles[i+p0i]);
+            m_tTriangles.Add(-pi1);
+            m_tTriangles.Add(-pi2);
+            m_bTriangles.Add(-pi1);
+            m_bTriangles.Add(m_triangles[i+p1i]);
+            m_bTriangles.Add(m_triangles[i+p2i]);
+            m_bTriangles.Add(-pi1);
+            m_bTriangles.Add(m_triangles[i+p2i]);
+            m_bTriangles.Add(-pi2);
+        }
+        else
+        {
+            m_bTriangles.Add(m_triangles[i+p0i]);
+            m_bTriangles.Add(-pi1);
+            m_bTriangles.Add(-pi2);
+            m_tTriangles.Add(-pi1);
+            m_tTriangles.Add(m_triangles[i+p1i]);
+            m_tTriangles.Add(m_triangles[i+p2i]);
+            m_tTriangles.Add(-pi1);
+            m_tTriangles.Add(m_triangles[i+p2i]);
+            m_tTriangles.Add(-pi2);
+        }
+        m_iEdges.Add(AddIntersectionVertex(inter1.Item1,m_triangles[i+p0i],m_triangles[i+p1i],inter1.Item2));
+        m_iEdges.Add(AddIntersectionVertex(inter2.Item1,m_triangles[i+p0i],m_triangles[i+p2i],inter2.Item2));
+    }
+
+    private List<Point3D> m_vertices;
+    private List<int> m_triangles; // reference to the input triangles
+    public List<int> m_tTriangles;
+    public List<int> m_bTriangles;
+    public List<(int,int,double)> m_iMappings; // for the top and bottom triangles
+    public SortedDictionary<Vector2, ((Vector3,int,int,float), int)> m_iVertices; // for the intersection face
+    public List<int> m_iEdges;
+
+    private void CopyTriangle(List<int> desTriangles, List<int> srcTriangles, int startIndex)
+    {
+        desTriangles.Add(srcTriangles[startIndex+0]);
+        desTriangles.Add(srcTriangles[startIndex+1]);
+        desTriangles.Add(srcTriangles[startIndex+2]);
+    }
+
+    private int AddIntersectionVertex(Point3D vertex, int p0, int p1, double t)
+    {
+        Vector2 planeVertex = new Vector2((float)Point3D.Dot(px,vertex), (float)Point3D.Dot(py,vertex));
+        if(!m_iVertices.ContainsKey(planeVertex))
+        {
+            m_iVertices[planeVertex] = ((vertex.ToVector3(),p0,p1,(float)t), m_iVertices.Count);
+        }
+        return m_iVertices[planeVertex].Item2;
+    }
+
+    private (Point3D, double) CalculateIntersection(int p0, int p1)
+    {
+        Point3D seg = m_vertices[p1]-m_vertices[p0];
+        double dir = Point3D.Dot(seg,pn);
+
+        Point3D diff = m_vertices[p0];
+        diff.x = diff.x - pp1[0];
+        diff.y = diff.y - pp1[1];
+        diff.z = diff.z - pp1[2];
+
+        double t = -1d * Point3D.Dot(pn,diff) / dir;
+        Point3D res = m_vertices[p0]+(seg*t);
+        return (res,t);
+    }
+
+    private Point3D pn;
+    private Point3D px;
+    private Point3D py;
+    private double[] pp1=new double[3]{0d,0d,0d};
+    private double[] pp2=new double[3]{0d,0d,0d};
+    private double[] pp3=new double[3]{0d,0d,0d};
+    private double[] vp=new double[3]{0d,0d,0d};
+
+    // Use left hand rule.
+    // Positive if d is below plane abc, negative if d is above, zero if on.
+    private int Orient3D(int v)
+    {
+        vp[0] = m_vertices[v].x;
+        vp[1] = m_vertices[v].y;
+        vp[2] = m_vertices[v].z;
+
+        return DoubleToInt(GeometricPredicates.Orient3D(pp1,pp2,pp3,vp));
+    }
+    private int DoubleToInt(double val)
+    {
+        if(val < 0d)
+        {
+            return -1;
+        }
+        if(val > 0d)
+        {
+            return 1;
+        }
+        return 0;
+    }
+}
+
 }
