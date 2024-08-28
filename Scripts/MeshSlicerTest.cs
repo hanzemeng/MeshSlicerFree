@@ -7,11 +7,12 @@ namespace Hanzzz.MeshSlicerFree
 
 public class MeshSlicerTest : MonoBehaviour
 {
-    [Header("Right click on the script and to run the available tests.\n")]
+    [Header("Right click on the title of the script to see the available tests.\n")]
 
     public Transform plane;
     public GameObject target;
     public Material intersectionMaterial;
+    public float splitDistance;
 
     private MeshSlicer meshSlicer = new MeshSlicer();
     private SkinnedMeshSlicer skinnedMeshSlicer = new SkinnedMeshSlicer();
@@ -58,6 +59,8 @@ public class MeshSlicerTest : MonoBehaviour
         UnityEngine.Debug.Log(log);
         result.Item1.transform.SetParent(transform,false);
         result.Item2.transform.SetParent(transform,false);
+        result.Item1.transform.position += splitDistance * plane.up;
+        result.Item2.transform.position -= splitDistance * plane.up;
         target.SetActive(false);
     }
 
