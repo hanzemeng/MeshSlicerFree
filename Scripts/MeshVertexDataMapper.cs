@@ -23,6 +23,7 @@ public class MeshVertexDataMapper
     private List<List<Vector4>> m_targetUVs;
     private List<BoneWeight> m_targetBoneWeights;
 
+    private Dictionary<int,int> m_verticesMapping;
     
     public MeshVertexDataMapper()
     {
@@ -38,6 +39,8 @@ public class MeshVertexDataMapper
         m_targetColors = new List<Color32>();
         m_targetUVs = Enumerable.Range(0,8).Select(i=>new List<Vector4>()).ToList();
         m_targetBoneWeights = new List<BoneWeight>();
+
+        m_verticesMapping = new Dictionary<int, int>();
     }
 
     public void AssignSourceMesh(Mesh sourceMesh)
@@ -67,6 +70,8 @@ public class MeshVertexDataMapper
             sourceMesh.GetBoneWeights(m_sourceBoneWeights);
             m_targetBoneWeights.Clear();
         }
+
+        m_verticesMapping.Clear();
     }
     public void AssignSourceMesh(MeshVertexDataMapper other)
     {
@@ -95,6 +100,8 @@ public class MeshVertexDataMapper
             m_sourceBoneWeights = other.m_sourceBoneWeights;
             m_targetBoneWeights.Clear();
         }
+
+        m_verticesMapping.Clear();
     }
 
     public int GetTargetVertexCount()
@@ -102,8 +109,17 @@ public class MeshVertexDataMapper
         return m_targetPositions.Count;
     }
 
-    public void CopyVertexData(int s)
+    public int CopyVertexData(int s)
     {
+        int res;
+        if(m_verticesMapping.TryGetValue(s, out res))
+        {
+            return res;
+        }
+
+        res = m_targetPositions.Count;
+        m_verticesMapping[s] = res;
+
         m_targetPositions.Add(m_sourcePositions[s]);
         if(m_hasColor)
         {
@@ -120,14 +136,16 @@ public class MeshVertexDataMapper
         {
             m_targetBoneWeights.Add(m_sourceBoneWeights[s]);
         }
+        return res;
     }
 
-    public void InterpolateVertexData(int s0, int s1, double t)
+    public int InterpolateVertexData(int s0, int s1, double t)
     {
-        InterpolateVertexData(s0,s1,(float)t);
+        return InterpolateVertexData(s0,s1,(float)t);
     }
-    public void InterpolateVertexData(int s0, int s1, float t)
+    public int InterpolateVertexData(int s0, int s1, float t)
     {
+        int res = m_targetPositions.Count;
         m_targetPositions.Add(Vector4.Lerp(m_sourcePositions[s0],m_sourcePositions[s1],t));
         if(m_hasColor)
         {
@@ -144,6 +162,7 @@ public class MeshVertexDataMapper
         {
             m_targetBoneWeights.Add(BoneWeightLerp.Lerp(m_sourceBoneWeights[s0], m_sourceBoneWeights[s1],t));
         }
+        return res;
     }
 
     public void AddDefaultValues(IReadOnlyList<Vector3> positions)

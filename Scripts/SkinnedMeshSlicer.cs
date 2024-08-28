@@ -17,7 +17,7 @@ public class SkinnedMeshSlicer
     private MeshVertexDataMapper m_bMVDM;
 
     private List<Vector3> m_targetVertices;
-    private List<int> m_targetTrianglesTemp;
+    private List<int> m_listIntTemp;
     private List<int> m_targetTriangles;
     private Dictionary<int,int> m_targetVerticesSubmeshIndexMap;
     private int m_targetSubmeshCount;
@@ -45,7 +45,7 @@ public class SkinnedMeshSlicer
         m_bMVDM = new();
 
         m_targetVertices = new();
-        m_targetTrianglesTemp = new();
+        m_listIntTemp = new();
         m_targetTriangles = new();
         m_targetVerticesSubmeshIndexMap = new();
         m_targetBoneWeights = new();
@@ -229,9 +229,9 @@ public class SkinnedMeshSlicer
         m_targetTriangles.Clear();
         for(int i=0; i<m_targetSubmeshCount; i++)
         {
-            targetMesh.GetTriangles(m_targetTrianglesTemp, i);
-            m_targetTrianglesTemp.ForEach(x=>m_targetVerticesSubmeshIndexMap[x]=i);
-            m_targetTriangles.AddRange(m_targetTrianglesTemp);
+            targetMesh.GetTriangles(m_listIntTemp, i);
+            m_listIntTemp.ForEach(x=>m_targetVerticesSubmeshIndexMap[x]=i);
+            m_targetTriangles.AddRange(m_listIntTemp);
         }
 
         m_tMVDM.AssignSourceMesh(targetMesh);
@@ -248,6 +248,7 @@ public class SkinnedMeshSlicer
         for(int i=0; i<srcTriangles.Count; i+=3)
         {
             int subMeshIndex = -1;
+            m_listIntTemp.Clear();
             for(int j=0; j<3; j++)
             {
                 if(srcTriangles[i+j]<0)
@@ -255,17 +256,17 @@ public class SkinnedMeshSlicer
                     int p1 = m_slicer.m_iMappings[-srcTriangles[i+j]].Item1;
                     int p2 = m_slicer.m_iMappings[-srcTriangles[i+j]].Item2;
                     double t = m_slicer.m_iMappings[-srcTriangles[i+j]].Item3;
-                    MVDM.InterpolateVertexData(p1,p2,t);
+                    m_listIntTemp.Add(MVDM.InterpolateVertexData(p1,p2,t));
                 }
                 else
                 {
                     subMeshIndex = m_targetVerticesSubmeshIndexMap[srcTriangles[i+j]];
-                    MVDM.CopyVertexData(srcTriangles[i+j]);
+                    m_listIntTemp.Add(MVDM.CopyVertexData(srcTriangles[i+j]));
                 }
             }
-            resTriangles[subMeshIndex].Add(i+0);
-            resTriangles[subMeshIndex].Add(i+1);
-            resTriangles[subMeshIndex].Add(i+2);
+            resTriangles[subMeshIndex].Add(m_listIntTemp[0]);
+            resTriangles[subMeshIndex].Add(m_listIntTemp[1]);
+            resTriangles[subMeshIndex].Add(m_listIntTemp[2]);
         }
     }
 
