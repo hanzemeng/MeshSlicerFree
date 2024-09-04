@@ -1,4 +1,4 @@
-//#define CHECK_VERTEX_ON_EDGE // considerably slows triangulation, uncomment if previously crashed or not terminating
+#define CHECK_VERTEX_ON_EDGE // considerably slows triangulation, uncomment if previously crashed or not terminating
 using System.Collections.Generic;
 
 namespace Hanzzz.MeshSlicerFree
@@ -111,7 +111,6 @@ public partial class ConstrainedDelaunayTriangulation
             {
                 while(0 != m_intersectEdges.Count)
                 {
-                        
                     int p1 = m_intersectEdges[0].Item1;
                     int p2 = m_intersectEdges[0].Item2;
                     (int, int) ts = FindIncidentTriangles(p1,p2);
@@ -127,7 +126,6 @@ public partial class ConstrainedDelaunayTriangulation
 
                     int o013 = Orient2D(p0,p1,p3);
                     int o023 = Orient2D(p0,p2,p3);
-
                     if(!((-1 == o013 && 1 == o023) || (1 == o013 && -1 == o023)))
                     {
                         m_intersectEdges.Add(m_intersectEdges[0]);

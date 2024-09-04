@@ -1,5 +1,8 @@
 //#define USE_DECIMAL
 
+namespace Hanzzz.MeshSlicerFree
+{
+
 public static class FloatingPointConverter
 {
     #if USE_DECIMAL
@@ -32,4 +35,6 @@ public static class FloatingPointConverter
         return FloatToDouble(DoubleToFloat(val));
     }
     #endif
+}
+
 }

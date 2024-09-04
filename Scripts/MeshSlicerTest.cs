@@ -106,28 +106,6 @@ public class MeshSlicerTest : MonoBehaviour
         skinnedMeshSlicer = new SkinnedMeshSlicer();
         target.SetActive(true);
     }
-        [ContextMenu("Test")]
-        public void Test()
-        {
-             double[] pp0=new double[2]{146.482300000000, 185.699000000000}; // 2963 
-             double[] pp1=new double[2]{147.503700000000, 187.645000000000}; // 190 
-             double[] pp2=new double[2]{146.473300000000, 185.699000000000}; // 116 
-             double[] pp3=new double[2]{146.473200000000, 185.699000000000}; // 117 
-
-            UnityEngine.Debug.Log(DoubleToInt(RobustGeometry.Predicates.GeometricPredicates.Orient2D(pp3,pp2,pp1)));
-        }
-        private int DoubleToInt(double val)
-    {
-        if(val < 0d)
-        {
-            return -1;
-        }
-        if(val > 0d)
-        {
-            return 1;
-        }
-        return 0;
-    }
 }
 
 }

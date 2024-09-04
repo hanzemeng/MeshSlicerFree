@@ -19,8 +19,6 @@ public class Slicer
         m_iEdges = new();
         m_iMappings = new();
         m_iMappings.Add((-1,-1,-1)); // dummy
-
-        pn = new();
     }
     public void Reset()
     {
@@ -32,13 +30,6 @@ public class Slicer
         m_iEdges.Clear();
         m_iMappings.Clear();
         m_iMappings.Add((-1,-1,-1)); // dummy
-
-        for(int i=0;i<3;i++)
-        {
-            pp1[i] = 0d;
-            pp2[i] = 0d;
-            pp3[i] = 0d;
-        }
     }
 
     public void Slice(IReadOnlyList<Vector3> vertices, List<int> triangles, Plane p)
@@ -63,24 +54,30 @@ public class Slicer
     public void Slice(IReadOnlyList<Vector3> vertices, List<int> triangles, Vector3 p1, Vector3 p2, Vector3 p3)
     {
         Reset();
-        m_vertices = vertices.Select(x=>new Point3D(x)).ToList();
+        for(int i=0; i<vertices.Count; i++)
+        {
+            m_vertices.Add(new Point3D(vertices[i]));
+        }
         m_triangles = triangles;
-        pp1[0] = (double)p1.x;
-        pp1[1] = (double)p1.z; // swap y and z for predicates to work
-        pp1[2] = (double)p1.y; // swap y and z for predicates to work
-        pp2[0] = (double)p2.x;
-        pp2[1] = (double)p2.z; // swap y and z for predicates to work
-        pp2[2] = (double)p2.y; // swap y and z for predicates to work
-        pp3[0] = (double)p3.x;
-        pp3[1] = (double)p3.z; // swap y and z for predicates to work
-        pp3[2] = (double)p3.y; // swap y and z for predicates to work
-        pn = Point3D.Cross(new Point3D(p3) - new Point3D(p2), new Point3D(p2) - new Point3D(p1));
-        pn.Normalize();
-        px = pn.GetPerpendicular();
-        px.Normalize();
-        py = Point3D.Cross(pn, px);
-        py.Normalize();
-        //(new GameObject()).transform.position = CalculateIntersection(0,1).Item1.ToVector3()
+        Point3D pp1 = new Point3D(p1);
+        Point3D pp2 = new Point3D(p2);
+        Point3D pp3 = new Point3D(p3);
+        void CopyPointToDoubleArray(double[] arr, Point3D p)
+        {
+            arr[0] = p.x;
+            arr[1] = p.y;
+            arr[2] = p.z;
+        }
+        CopyPointToDoubleArray(m_pp1, pp1);
+        CopyPointToDoubleArray(m_pp2, pp2);
+        CopyPointToDoubleArray(m_pp3, pp3);
+
+        m_pn = Point3D.Cross(pp3-pp2, pp2-pp1);
+        m_pn.Normalize();
+        m_px = m_pn.GetPerpendicular();
+        m_px.Normalize();
+        m_py = Point3D.Cross(m_pn, m_px);
+        m_py.Normalize();
 
         for(int i=0; i<triangles.Count; i+=3)
         {
@@ -264,8 +261,8 @@ public class Slicer
     {
         Point2D planeVertex = new Point2D
         (
-            FloatingPointConverter.KeepFloatDecimals(Point3D.Dot(px,vertex)),
-            FloatingPointConverter.KeepFloatDecimals(Point3D.Dot(py,vertex))
+            FloatingPointConverter.KeepFloatDecimals(Point3D.Dot(m_px,vertex)),
+            FloatingPointConverter.KeepFloatDecimals(Point3D.Dot(m_py,vertex))
         );
         if(!m_iVertices.ContainsKey(planeVertex))
         {
@@ -277,35 +274,35 @@ public class Slicer
     private (Point3D, double) CalculateIntersection(int p0, int p1)
     {
         Point3D seg = m_vertices[p1]-m_vertices[p0];
-        double dir = Point3D.Dot(seg,pn);
+        double dir = Point3D.Dot(seg,m_pn);
 
         Point3D diff = m_vertices[p0];
-        diff.x = diff.x - pp1[0];
-        diff.y = diff.y - pp1[1];
-        diff.z = diff.z - pp1[2];
+        diff.x = diff.x - m_pp1[0];
+        diff.y = diff.y - m_pp1[1];
+        diff.z = diff.z - m_pp1[2];
 
-        double t = -1d * Point3D.Dot(pn,diff) / dir;
+        double t = -1d * Point3D.Dot(m_pn,diff) / dir;
         Point3D res = m_vertices[p0]+(seg*t);
         return (res,t);
     }
 
-    private Point3D pn;
-    private Point3D px;
-    private Point3D py;
-    private double[] pp1=new double[3]{0d,0d,0d};
-    private double[] pp2=new double[3]{0d,0d,0d};
-    private double[] pp3=new double[3]{0d,0d,0d};
-    private double[] vp=new double[3]{0d,0d,0d};
+    private Point3D m_pn;
+    private Point3D m_px;
+    private Point3D m_py;
+    private double[] m_pp1=new double[3]{0d,0d,0d};
+    private double[] m_pp2=new double[3]{0d,0d,0d};
+    private double[] m_pp3=new double[3]{0d,0d,0d};
+    private double[] m_vp=new double[3]{0d,0d,0d};
 
     // Use left hand rule.
     // Positive if d is below plane abc, negative if d is above, zero if on.
     private int Orient3D(int v)
     {
-        vp[0] = m_vertices[v].x;
-        vp[1] = m_vertices[v].y;
-        vp[2] = m_vertices[v].z;
+        m_vp[0] = m_vertices[v].x;
+        m_vp[1] = m_vertices[v].y;
+        m_vp[2] = m_vertices[v].z;
 
-        return DoubleToInt(GeometricPredicates.Orient3D(pp1,pp2,pp3,vp));
+        return DoubleToInt(GeometricPredicates.Orient3D(m_pp1,m_pp2,m_pp3,m_vp));
     }
     private int DoubleToInt(double val)
     {
