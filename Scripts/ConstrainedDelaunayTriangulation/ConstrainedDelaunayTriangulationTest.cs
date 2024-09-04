@@ -19,14 +19,14 @@ public class ConstrainedDelaunayTriangulationTest : MonoBehaviour
     [ContextMenu("Triangulate")]
     public void Triangulate()
     {
-        List<Vector2> positions = new List<Vector2>();
+        List<Point2D> positions = new List<Point2D>();
         foreach(Transform child in pointsParent)
         {
             if(false == child.gameObject.activeSelf)
             {
                 continue;
             }
-            positions.Add(child.position);
+            positions.Add(new Point2D(child.position));
         }
         List<int> edges = new List<int>();
         for(int i=0; i<positions.Count; i++)
@@ -38,7 +38,7 @@ public class ConstrainedDelaunayTriangulationTest : MonoBehaviour
         var res = cdt.Triangulate(positions,edges);
 
         Mesh m = new Mesh();
-        m.vertices = positions.Select(x=>(Vector3)x).ToArray();
+        m.vertices = positions.Select(x=>(Vector3)(x.ToVector2())).ToArray();
         m.triangles = res.ToArray();
         resultMesh.mesh = m;
     }

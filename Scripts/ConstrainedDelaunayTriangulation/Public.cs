@@ -36,7 +36,7 @@ public partial class ConstrainedDelaunayTriangulation
     }
 
     public const float INPUT_VERTICES_RANGE = 10000f;
-    public void Triangulate(List<Vector2> vertices, List<int> edges, List<int> resTriangles)
+    public void Triangulate(List<Point2D> vertices, List<int> edges, List<int> resTriangles)
     {
         Reset();
         DelaunayTriangulation(vertices);
@@ -58,7 +58,7 @@ public partial class ConstrainedDelaunayTriangulation
             resTriangles.Add(m_triangles[i+2]-3);
         }
     }
-    public List<int> Triangulate(List<Vector2> vertices, List<int> edges)
+    public List<int> Triangulate(List<Point2D> vertices, List<int> edges)
     {
         List<int> resTriangles = new List<int>();
         Triangulate(vertices, edges, resTriangles);

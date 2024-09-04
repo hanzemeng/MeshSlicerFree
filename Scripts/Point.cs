@@ -34,8 +34,12 @@ public struct Point2D : IComparable<Point2D>
 
     public Point2D(Vector2 v)
     {
-        x=v.x;
-        y=v.y;
+        x=FloatingPointConverter.FloatToDouble(v.x);
+        y=FloatingPointConverter.FloatToDouble(v.y);
+    }
+    public Vector2 ToVector2()
+    {
+        return new Vector2(FloatingPointConverter.DoubleToFloat(x),FloatingPointConverter.DoubleToFloat(y));
     }
     public Point2D(double x, double y)
     {
@@ -46,6 +50,28 @@ public struct Point2D : IComparable<Point2D>
     public override string ToString()
     {
         return $"{x.ToString("F12")}, {y.ToString("F12")}";
+    }
+
+    public double SquaredMagnitude()
+    {
+        return Dot(this, this);
+    }
+
+    public static double Dot(Point2D p1, Point2D p2)
+    {
+        return p1.x*p2.x+p1.y*p2.y;
+    }
+    public static Point2D operator+(Point2D p1, Point2D p2)
+    {
+        return new Point2D(p1.x+p2.x,p1.y+p2.y);
+    }
+    public static Point2D operator-(Point2D p1, Point2D p2)
+    {
+        return new Point2D(p1.x-p2.x,p1.y-p2.y);
+    }
+    public static Point2D operator*(Point2D p, double d)
+    {
+        return new Point2D(p.x*d,p.y*d);
     }
 
     public double x;

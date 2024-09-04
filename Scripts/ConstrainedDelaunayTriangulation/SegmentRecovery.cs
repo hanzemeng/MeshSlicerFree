@@ -1,3 +1,4 @@
+//#define CHECK_VERTEX_ON_EDGE // considerably slows triangulation, uncomment if previously crashed or not terminating
 using System.Collections.Generic;
 
 namespace Hanzzz.MeshSlicerFree
@@ -21,7 +22,34 @@ public partial class ConstrainedDelaunayTriangulation
                 e0 = edges[i-1];
                 e1 = edges[i];
             }
-            m_constraints.Add((e0+3,e1+3));
+            e0+=3;
+            e1+=3;
+
+            #if CHECK_VERTEX_ON_EDGE
+            // add e0->e1 to constraints only if no vertecis lie on it
+            for(int j=3; j <m_vertices.Count; j++)
+            {
+                if(e0 == j || e1 == j)
+                {
+                    continue;
+                }
+                if(0 == Orient2D(e0,j,e1))
+                {
+                    Point2D e0j = m_vertices[j]-m_vertices[e0];
+                    Point2D je1 = m_vertices[e1]-m_vertices[j];
+                    double d = Point2D.Dot(e0j,je1);
+                    if(d > 0d && d<(m_vertices[e1]-m_vertices[e0]).SquaredMagnitude())
+                    {
+                        goto NEXT;
+                    }
+                }
+            }
+            #endif
+            m_constraints.Add((e0,e1));
+            #if CHECK_VERTEX_ON_EDGE
+            NEXT:
+            continue;
+            #endif
         }
 
         foreach((int,int) constraint in m_constraints)
@@ -83,6 +111,7 @@ public partial class ConstrainedDelaunayTriangulation
             {
                 while(0 != m_intersectEdges.Count)
                 {
+                        
                     int p1 = m_intersectEdges[0].Item1;
                     int p2 = m_intersectEdges[0].Item2;
                     (int, int) ts = FindIncidentTriangles(p1,p2);
@@ -98,6 +127,7 @@ public partial class ConstrainedDelaunayTriangulation
 
                     int o013 = Orient2D(p0,p1,p3);
                     int o023 = Orient2D(p0,p2,p3);
+
                     if(!((-1 == o013 && 1 == o023) || (1 == o013 && -1 == o023)))
                     {
                         m_intersectEdges.Add(m_intersectEdges[0]);

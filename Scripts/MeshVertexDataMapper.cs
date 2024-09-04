@@ -1,3 +1,5 @@
+#define USE_32_BIT_INDEX_FORMAT // uncomment if one of the sliced meshes has more than 65536 vertices
+
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
@@ -218,6 +220,11 @@ public class MeshVertexDataMapper
     public Mesh MakeMesh()
     {
         Mesh res = new Mesh();
+        #if USE_32_BIT_INDEX_FORMAT
+        res.indexFormat = IndexFormat.UInt32;
+        #else
+        res.indexFormat = IndexFormat.UInt16;
+        #endif
         res.SetVertices(m_targetPositions);
         if(m_hasColor)
         {

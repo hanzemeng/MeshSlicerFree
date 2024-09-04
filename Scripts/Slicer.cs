@@ -15,7 +15,7 @@ public class Slicer
         //m_triangles = new(); do not uncomment
         m_tTriangles = new();
         m_bTriangles = new();
-        m_iVertices = new SortedDictionary<Vector2, ((Vector3,int,int,float), int)>(new Vector2Comparator());
+        m_iVertices = new SortedDictionary<Point2D, ((Vector3,int,int,float), int)>();
         m_iEdges = new();
         m_iMappings = new();
         m_iMappings.Add((-1,-1,-1)); // dummy
@@ -250,7 +250,7 @@ public class Slicer
     public List<int> m_tTriangles;
     public List<int> m_bTriangles;
     public List<(int,int,double)> m_iMappings; // for the top and bottom triangles
-    public SortedDictionary<Vector2, ((Vector3,int,int,float), int)> m_iVertices; // for the intersection face
+    public SortedDictionary<Point2D, ((Vector3,int,int,float), int)> m_iVertices; // for the intersection face
     public List<int> m_iEdges;
 
     private void CopyTriangle(List<int> desTriangles, List<int> srcTriangles, int startIndex)
@@ -262,7 +262,11 @@ public class Slicer
 
     private int AddIntersectionVertex(Point3D vertex, int p0, int p1, double t)
     {
-        Vector2 planeVertex = new Vector2((float)Point3D.Dot(px,vertex), (float)Point3D.Dot(py,vertex));
+        Point2D planeVertex = new Point2D
+        (
+            FloatingPointConverter.KeepFloatDecimals(Point3D.Dot(px,vertex)),
+            FloatingPointConverter.KeepFloatDecimals(Point3D.Dot(py,vertex))
+        );
         if(!m_iVertices.ContainsKey(planeVertex))
         {
             m_iVertices[planeVertex] = ((vertex.ToVector3(),p0,p1,(float)t), m_iVertices.Count);

@@ -6,7 +6,7 @@ namespace Hanzzz.MeshSlicerFree
 
 public partial class ConstrainedDelaunayTriangulation
 {
-    private void DelaunayTriangulation(List<Vector2> vertices)
+    private void DelaunayTriangulation(List<Point2D> vertices)
     {
         AddVertex(new Point2D(-INPUT_VERTICES_RANGE,-INPUT_VERTICES_RANGE));
         AddVertex(new Point2D(INPUT_VERTICES_RANGE,-INPUT_VERTICES_RANGE));
@@ -18,7 +18,7 @@ public partial class ConstrainedDelaunayTriangulation
 
         for(int i=0; i<vertices.Count; i++)
         {
-            int v = AddVertex(new Point2D(vertices[i]));
+            int v = AddVertex(vertices[i]);
             InsertVertex(v);
             //if(!VerifyDelaunay())
             //{
