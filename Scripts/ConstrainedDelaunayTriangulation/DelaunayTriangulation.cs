@@ -8,261 +8,249 @@ public partial class ConstrainedDelaunayTriangulation
 {
     private void DelaunayTriangulation(List<Point2D> vertices)
     {
-        AddVertex(new Point2D(-INPUT_VERTICES_RANGE,-INPUT_VERTICES_RANGE));
-        AddVertex(new Point2D(INPUT_VERTICES_RANGE,-INPUT_VERTICES_RANGE));
-        AddVertex(new Point2D(0f,INPUT_VERTICES_RANGE));
-        AddTriangle(0,1,2);
-        m_incidentTriangles[0] = 0;
-        m_incidentTriangles[1] = 0;
-        m_incidentTriangles[2] = 0;
-
         for(int i=0; i<vertices.Count; i++)
         {
-            int v = AddVertex(vertices[i]);
-            InsertVertex(v);
-            //if(!VerifyDelaunay())
-            //{
-            //    Debug.Log("NOT Delaunay");
-            //    throw new System.Exception();
-            //}
+            AddVertex(vertices[i]);
+            m_verticesCenter += vertices[i];
         }
-    }
 
-    private void InsertVertex(int v)
-    {
+        m_verticesCenter /= (double)vertices.Count;
+
+        double dis = (m_vertices[0] - m_verticesCenter).SquaredMagnitude();
+        m_p0 = 0;
+        for(int i=1; i<vertices.Count; i++)
         {
-            (int,int,int,int) walk = FindTriangleContainVertex(v);
-            int t0 = walk.Item1;
-
-            bool onEdge = false;
-            if(0 == walk.Item2)
+            double curDis = (m_vertices[i] - m_verticesCenter).SquaredMagnitude();
+            if(curDis < dis)
             {
-                onEdge = true;
+                dis = curDis;
+                m_p0 = i;
             }
-            else if(0 == walk.Item3)
+        }
+
+        dis = double.MaxValue;
+        m_p1 = -1;
+        for(int i=0; i<vertices.Count; i++)
+        {
+            if(m_p0 == i)
             {
-                OrientTriangle(t0,m_triangles[3*t0+1]);
-                onEdge = true;
+                continue;
             }
-            else if(0 == walk.Item4)
+            double curDis = (m_vertices[i] - m_vertices[m_p0]).SquaredMagnitude();
+            if(curDis < dis)
             {
-                OrientTriangle(t0,m_triangles[3*t0+2]);
-                onEdge = true;
+                dis = curDis;
+                m_p1 = i;
             }
+        }
 
-            if(onEdge)
+        dis = double.MaxValue;
+        m_p2 = -1;
+        double m_p0Mag = m_vertices[m_p0].SquaredMagnitude();
+        double m_p1Mag = m_vertices[m_p1].SquaredMagnitude();
+        for(int i=0; i<vertices.Count; i++)
+        {
+            if(m_p0 == i || m_p1 == i || 0 == Orient2D(m_p0,m_p1,i))
             {
-                int p0 = m_triangles[3*t0+0];
-                int p1 = m_triangles[3*t0+1];
-                int p2 = m_triangles[3*t0+2];
-                int t1 = m_neighbors[3*t0+0];
-                int t0n1 = m_neighbors[3*t0+1];
-                int t0n2 = m_neighbors[3*t0+2];
-                OrientTriangle(t1, p0);
-                int p3 = m_triangles[3*t1+1];
-                int t1n0 = m_neighbors[3*t1+0];
-                int t1n1 = m_neighbors[3*t1+1];
-
-                m_triangles[3*t0+0] = v;
-                m_triangles[3*t0+1] = p2;
-                m_triangles[3*t0+2] = p0;
-                m_triangles[3*t1+0] = v;
-                m_triangles[3*t1+1] = p0;
-                m_triangles[3*t1+2] = p3;
-                int t2 = AddTriangle(v,p3,p1);
-                int t3 = AddTriangle(v,p1,p2);
-
-                m_incidentTriangles[v] = t0;
-                m_incidentTriangles[p0] = t0;
-                m_incidentTriangles[p2] = t0;
-                m_incidentTriangles[p1] = t2;
-                m_incidentTriangles[p3] = t2;
-
-                m_neighbors[3*t0+0] = t3;
-                m_neighbors[3*t0+1] = t0n2;
-                if(-1 != t0n2)
-                {
-                    OrientTriangle(t0n2, p2, p0);
-                    m_neighbors[3*t0n2+1] = t0;
-                }
-                m_neighbors[3*t0+2] = t1;
-
-                m_neighbors[3*t1+0] = t0;
-                m_neighbors[3*t1+1] = t1n0;
-                if(-1 != t1n0)
-                {
-                    OrientTriangle(t1n0, p0, p3);
-                    m_neighbors[3*t1n0+1] = t1;
-                }
-                m_neighbors[3*t1+2] = t2;
-
-                m_neighbors[3*t2+0] = t1;
-                m_neighbors[3*t2+1] = t1n1;
-                if(-1 != t1n1)
-                {
-                    OrientTriangle(t1n1, p3, p1);
-                    m_neighbors[3*t1n1+1] = t2;
-                }
-                m_neighbors[3*t2+2] = t3;
-
-                m_neighbors[3*t3+0] = t2;
-                m_neighbors[3*t3+1] = t0n1;
-                if(-1 != t0n1)
-                {
-                    OrientTriangle(t0n1, p1, p2);
-                    m_neighbors[3*t0n1+1] = t3;
-                }
-                m_neighbors[3*t3+2] = t0;
-
-                m_flippedTriangles.Push(t0);
-                m_flippedTriangles.Push(t1);
-                m_flippedTriangles.Push(t2);
-                m_flippedTriangles.Push(t3);
+                continue;
             }
-            else
+            double iMag = m_vertices[i].SquaredMagnitude();
+            double sx = m_p0Mag*(m_vertices[m_p1].y-m_vertices[i].y) - m_vertices[m_p0].y*(m_p1Mag-iMag) + m_p1Mag*m_vertices[i].y-m_vertices[m_p1].y*iMag;
+            double sy = m_vertices[m_p0].x*(m_p1Mag-iMag) - m_p0Mag*(m_vertices[m_p1].x-m_vertices[i].x) + m_vertices[m_p1].x*iMag-m_p1Mag*m_vertices[i].x;
+            sx/=2;
+            sy/=2;
+            double a = m_vertices[m_p0].x*(m_vertices[m_p1].y-m_vertices[i].y) - m_vertices[m_p0].y*(m_vertices[m_p1].x-m_vertices[i].x) + m_vertices[m_p1].x*m_vertices[i].y-m_vertices[m_p1].y*m_vertices[i].x;
+            double b = m_vertices[m_p0].x*(m_vertices[m_p1].y*iMag-m_p1Mag*m_vertices[i].y) - m_vertices[m_p0].y*(m_vertices[m_p1].x*iMag-m_p1Mag*m_vertices[i].x) + m_p0Mag*(m_vertices[m_p1].x*m_vertices[i].y-m_vertices[m_p1].y*m_vertices[i].x);
+
+            double cur_dis = b/a + (sx*sx+sy*sy)/(a*a);
+            if(cur_dis < dis)
             {
-                int p0 = m_triangles[3*t0+0];
-                int p1 = m_triangles[3*t0+1];
-                int p2 = m_triangles[3*t0+2];
+                dis = cur_dis;
+                //m_verticesCenter = new Point2D(sx/a,sy/a);
+                m_p2 = i;
+                m_verticesCenter = (m_vertices[m_p0] + m_vertices[m_p1] + m_vertices[m_p2])/3d;
+            }
+        }
+
+        if(-1 == m_p0 || -1 == m_p1 || -1 == m_p2)
+        {
+            throw new System.Exception();
+        }
+        if(-1 == Orient2D(m_p0,m_p1,m_p2))
+        {
+            int temp = m_p1;
+            m_p1 = m_p2;
+            m_p2 = temp;
+        }
+
+        AddTriangle(m_p0, m_p1, m_p2);
+        m_incidentTriangles[m_p0] = 0;
+        m_incidentTriangles[m_p1] = 0;
+        m_incidentTriangles[m_p2] = 0;
+        m_convexHull.Insert(m_p0);
+        m_convexHull.Insert(m_p1);
+        m_convexHull.Insert(m_p2);
+
+        m_verticesProcessOrder.Resize(vertices.Count);
+        for(int i=0; i<m_verticesProcessOrder.Count; i++)
+        {
+            m_verticesProcessOrder[i] = i;
+        }
+        m_verticesProcessOrder.Sort(m_verticesProcessOrderComparer);
+
+
+        Node<int> GetNextNode(Node<int> cur)
+        {
+            Node<int> res = m_convexHull.GetNextNode(cur);
+            if(Node<int>.Null == res)
+            {
+                return m_convexHull.GetMinNode();
+            }
+            return res;
+        }
+        Node<int> GetPreviousNode (Node<int> cur)
+        {
+            Node<int> res = m_convexHull.GetPreviousNode(cur);
+            if(Node<int>.Null == res)
+            {
+                return m_convexHull.GetMaxNode();
+            }
+            return res;
+        }
+
+        for(int i=3; i<m_verticesProcessOrder.Count; i++)
+        {
+            int p0 = m_verticesProcessOrder[i];
+            //Debug.Log(p0);
+            var it2 = m_convexHull.GetNodeLowerBound(p0);
+            if(Node<int>.Null == it2)
+            {
+                it2 = m_convexHull.GetMinNode();
+            }
+            var it1 = GetPreviousNode(it2);
+            int p1 = it1.value;
+            int p2 = it2.value;
+            int ori = Orient2D(p1,p0,p2);
+
+            if(1 == ori)
+            {
+                int t = AddTriangle(p0,p2,p1);
+                int n = FindIncidentTriangles(p1,p2).Item1;
+                m_neighbors[3*t+1] = n;
+                AssignNeighbor(n,p1,p2,t);
+                m_incidentTriangles[p0] = t;
+                Delunarlize(t, p0);
+
+                var it3 = GetPreviousNode(it1);                
+                int p3 = it3.value;
+                while(1 == Orient2D(p3,p0,p1))
+                {
+                    t = AddTriangle(p0,p1,p3);
+                    int n0 = FindIncidentTriangles(p0,p1).Item1;
+                    int n1 = FindIncidentTriangles(p1,p3).Item1;
+                    m_neighbors[3*t+0] = n0;
+                    AssignNeighbor(n0,p0,p1,t);
+                    m_neighbors[3*t+1] = n1;
+                    AssignNeighbor(n1,p1,p3,t);
+                    Delunarlize(t, p0);
+
+                    m_convexHull.Delete(it1.value);
+                    //m_convexHull.Delete(it1);
+                    it1 = m_convexHull.GetNode(p3);
+                    it3 = it1;
+                    it3 = GetPreviousNode(it3);
+                    
+                    p3 = it3.value;
+                    p1 = it1.value;
+                }
+           
+                it3 = GetNextNode(m_convexHull.GetNode(p2)); // RBTree's delete ruins every iterator
+                p3 = it3.value;
+                while(1 == Orient2D(p2,p0,p3))
+                {
+                    t = AddTriangle(p0,p3,p2);
+                    int n1 = FindIncidentTriangles(p3,p2).Item1;
+                    int n2 = FindIncidentTriangles(p2,p0).Item1;
+                    m_neighbors[3*t+1] = n1;
+                    AssignNeighbor(n1,p3,p2,t);
+                    m_neighbors[3*t+2] = n2;
+                    AssignNeighbor(n2,p2,p0,t);
+                    Delunarlize(t, p0);
+
+                    m_convexHull.Delete(it2.value);
+                    //m_convexHull.Delete(it2);
+                    it2 = m_convexHull.GetNode(p3);
+                    it3 = it2;
+                    it3 = GetNextNode(it3);
+
+                    p3 = it3.value;
+                    p2 = it2.value;
+                }
+            }
+            else if(0 == ori)
+            {
+                int t0 = FindIncidentTriangles(p1,p2).Item1;
+                OrientTriangle(t0,p1,p2);
+                int p3 = m_triangles[3*t0+0];
                 int n0 = m_neighbors[3*t0+0];
-                int n1 = m_neighbors[3*t0+1];
                 int n2 = m_neighbors[3*t0+2];
-
-                m_triangles[3*t0+0] = v;
-                m_triangles[3*t0+1] = p0;
+                m_triangles[3*t0+0] = p0;
+                m_triangles[3*t0+1] = p3;
                 m_triangles[3*t0+2] = p1;
-                int t1 = AddTriangle(v,p1,p2);
-                int t2 = AddTriangle(v,p2,p0);
+                int t1 = AddTriangle(p0,p2,p3);
 
-                m_incidentTriangles[v] = t0;
+                m_neighbors[3*t0+0] = t1;
+                m_neighbors[3*t0+1] = n0;
+                AssignNeighbor(n0,p3,p1,t0);
+                m_neighbors[3*t0+2] = -1;
+                m_neighbors[3*t1+0] = -1;
+                m_neighbors[3*t1+1] = n2;
+                AssignNeighbor(n2,p2,p3,t1);
+                m_neighbors[3*t1+2] = t0;
+
                 m_incidentTriangles[p0] = t0;
+                m_incidentTriangles[p3] = t0;
                 m_incidentTriangles[p1] = t0;
                 m_incidentTriangles[p2] = t1;
 
-                m_neighbors[3*t0+0] = t2;
-                m_neighbors[3*t0+1] = n0;
-                if(-1 != n0)
-                {
-                    OrientTriangle(n0, p0, p1);
-                    m_neighbors[3*n0+1] = t0;
-                }
-                m_neighbors[3*t0+2] = t1;
-
-                m_neighbors[3*t1+0] = t0;
-                m_neighbors[3*t1+1] = n1;
-                if(-1 != n1)
-                {
-                    OrientTriangle(n1, p1, p2);
-                    m_neighbors[3*n1+1] = t1;
-                }
-                m_neighbors[3*t1+2] = t2;
-
-                m_neighbors[3*t2+0] = t1;
-                m_neighbors[3*t2+1] = n2;
-                if(-1 != n2)
-                {
-                    OrientTriangle(n2, p2, p0);
-                    m_neighbors[3*n2+1] = t2;
-                }
-                m_neighbors[3*t2+2] = t0;
-
-                m_flippedTriangles.Push(t0);
-                m_flippedTriangles.Push(t1);
-                m_flippedTriangles.Push(t2);
+                Delunarlize(t0, p0);
+                Delunarlize(t1, p0);
             }
+            else
+            {
+                throw new System.Exception();
+            }
+            m_convexHull.Insert(p0);
         }
+            
+    }
 
-        while(0 != m_flippedTriangles.Count)
+    private void Delunarlize(int t, int p)
+    {
+        m_delunarlizeStack.Push(t);
+        while(0 != m_delunarlizeStack.Count)
         {
-            int c = m_flippedTriangles.Pop();
-            OrientTriangle(c, v);
-            int n = m_neighbors[3*c+1];
+            t = m_delunarlizeStack.Pop();
+
+            OrientTriangle(t, p);
+            int p1 = m_triangles[3*t+1];
+            int p2 = m_triangles[3*t+2];
+            int n = m_neighbors[3*t+1];
             if(-1 == n)
             {
                 continue;
             }
-
-            int p0 = m_triangles[3*c+0];
-            int p1 = m_triangles[3*c+1];
-            int p2 = m_triangles[3*c+2];
-
-            OrientTriangle(n, p2, p1);
+            OrientTriangle(n, p1, p2);
             int p3 = m_triangles[3*n+0];
-            if(-1 == p3)
+            if(1 != InCircle(p,p1,p2,p3))
             {
                 continue;
             }
-            if(1 != InCircle(p0,p1,p2,p3))
-            {
-                continue;
-            }
-
-            FlipDiagonal(c,n);
-
-            //s.Remove(c);
-            //s.Remove(n);
-            m_flippedTriangles.Push(c);
-            m_flippedTriangles.Push(n);
+            FlipDiagonal(t,n);
+            m_delunarlizeStack.Push(t);
+            m_delunarlizeStack.Push(n);
         }
-    }
-
-    private (int,int,int,int) FindTriangleContainVertex(int p)
-    {
-        int res = -1;
-        int orient01 = -2;
-        int orient12 = -2;
-        int orient20 = -2;
-        for(int i=0; i<m_triangles.Count; i+=3)
-        {
-            if(-1 != m_triangles[i])
-            {
-                res = i/3;
-                break;
-            }
-        }
-        int prev = res;
-        bool found = false;
-        while(!found)
-        {
-            int t0 = m_triangles[3*res+0];
-            int t1 = m_triangles[3*res+1];
-            int t2 = m_triangles[3*res+2];
-            int n0 = m_neighbors[3*res+0];
-            int n1 = m_neighbors[3*res+1];
-            int n2 = m_neighbors[3*res+2];
-
-            if(-1 == (orient01=Orient2D(t0,t1,p)) && -1 != n0 && prev != n0)
-            {
-                prev = res;
-                res = n0;
-            }
-            else
-            {
-                if(-1 == (orient12=Orient2D(t1,t2,p)) && -1 != n1 && prev != n1)
-                {
-                    prev = res;
-                    res = n1;
-                }
-                else
-                {
-                    if(-1 == (orient20=Orient2D(t2,t0,p)) && -1 != n2 && prev != n2)
-                    {
-                        prev = res;
-                        res = n2;
-                    }
-                    else
-                    {
-                        found = true;
-                    }
-                }
-            }
-        }
-        if(-2==orient01 || -2==orient12 || -2==orient20)
-        {
-            throw new System.Exception();
-        }
-        return (res, orient01, orient12, orient20);
     }
 }
-
+    
 }

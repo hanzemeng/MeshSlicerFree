@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,8 +11,51 @@ public partial class ConstrainedDelaunayTriangulation
     {
         m_vertices = new();
         m_constraints = new();
+        m_verticesCenter = Point2D.zero;
+        m_p0 = m_p1 = m_p2 = -1;
+        m_verticesProcessOrder = new ();
+        m_verticesProcessOrderComparer = Comparer<int>.Create((a,b)=>
+        {
+            bool ab = m_p0==a || m_p1==a || m_p2==a;
+            bool bb = m_p0==b || m_p1==b || m_p2==b;
+            if(ab&&bb)
+            {
+                return a.CompareTo(b);
+            }
+            else if(ab)
+            {
+                return -1;
+            }
+            else if(bb)
+            {
+                return 1;
+            }
+            Point2D ad = m_vertices[a] - m_verticesCenter;
+            Point2D bd = m_vertices[b] - m_verticesCenter;
+            return ad.SquaredMagnitude().CompareTo(bd.SquaredMagnitude());
+        });
+
         m_triangles = new();
         m_neighbors = new();
+        m_convexHull = new(Comparer<int>.Create((a,b)=>
+        {
+            Point2D ad = m_vertices[a] - m_verticesCenter;
+            Point2D bd = m_vertices[b] - m_verticesCenter;
+
+            double ar = ad.Radian();
+            double br = bd.Radian();
+            if(ar<0d)
+            {
+                ar += 2d*Math.PI;
+            }
+            if(br<0d)
+            {
+                br += 2d*Math.PI;
+            }
+
+            return ad.Radian().CompareTo(bd.Radian());
+        }));
+        m_delunarlizeStack = new ();
         m_flippedTriangles = new();
         m_incidentTriangles = new();
         m_findToVisit = new();
@@ -24,8 +68,13 @@ public partial class ConstrainedDelaunayTriangulation
     {
         m_vertices.Clear();
         m_constraints.Clear();
+        m_verticesCenter = Point2D.zero;
+        m_p0 = m_p1 = m_p2 = -1;
+        //m_verticesProcessOrder.Clear();
         m_triangles.Clear();
         m_neighbors.Clear();
+        m_convexHull.Clear();
+        m_delunarlizeStack.Clear();
         m_flippedTriangles.Clear();
         m_incidentTriangles.Clear();
         m_findToVisit.Clear();
@@ -53,9 +102,9 @@ public partial class ConstrainedDelaunayTriangulation
             {
                 continue;
             }
-            resTriangles.Add(m_triangles[i]-3);
-            resTriangles.Add(m_triangles[i+1]-3);
-            resTriangles.Add(m_triangles[i+2]-3);
+            resTriangles.Add(m_triangles[i]);
+            resTriangles.Add(m_triangles[i+1]);
+            resTriangles.Add(m_triangles[i+2]);
         }
     }
     public List<int> Triangulate(List<Point2D> vertices, List<int> edges)

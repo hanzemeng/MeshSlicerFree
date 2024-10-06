@@ -7,13 +7,27 @@ public partial class ConstrainedDelaunayTriangulation
 {
     private void DomainCalculation()
     {
-        m_findToVisit.Clear();
-        m_findVisited.Clear();
-        m_findToVisit.Enqueue(m_incidentTriangles[0]);
-        m_findVisited.Add(-1);
+        {
+            var it0 = m_convexHull.GetMinNode();
+            var it1 = m_convexHull.GetNextNode(it0);
+            int p0 = it0.value;
+            int p1 = it1.value;
+            int t0 = FindIncidentTriangles(p0,p1).Item1;
 
-        m_inDomain.Resize(m_triangles.Count/3, 0);
-        
+            m_findToVisit.Clear();
+            m_findVisited.Clear();
+            m_findVisited.Add(-1);
+            m_inDomain.Resize(m_triangles.Count/3, 0);
+            m_findToVisit.Enqueue(t0);
+            if(m_constraints.Contains((p0,p1)) || m_constraints.Contains((p1,p0)))
+            {
+                m_inDomain[t0] = 1;
+            }
+            else
+            {
+                m_inDomain[t0] = -1;
+            }
+        }
 
         while(0 != m_findToVisit.Count)
         {
@@ -23,11 +37,6 @@ public partial class ConstrainedDelaunayTriangulation
                 continue;
             }
             m_findVisited.Add(t);
-
-            if(ContainsGhostVertex(t))
-            {
-                m_inDomain[t] = -1;
-            }
 
             for(int i=0; i<3; i++)
             {

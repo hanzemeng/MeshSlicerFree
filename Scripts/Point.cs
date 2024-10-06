@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Hanzzz.MeshSlicerFree
@@ -40,10 +39,10 @@ public struct Point2D : IComparable<Point2D>
     public Vector2 ToVector2()
     {
         return new Vector2
-            (
-                FloatingPointConverter.DoubleToFloat(x),
-                FloatingPointConverter.DoubleToFloat(y)
-            );
+        (
+            FloatingPointConverter.DoubleToFloat(x),
+            FloatingPointConverter.DoubleToFloat(y)
+        );
     }
     public Point2D(double x, double y)
     {
@@ -56,6 +55,10 @@ public struct Point2D : IComparable<Point2D>
         return $"{x.ToString("F12")}, {y.ToString("F12")}";
     }
 
+    public double Radian()
+    {
+        return Math.Atan2(y,x);
+    }
     public double SquaredMagnitude()
     {
         return Dot(this, this);
@@ -77,6 +80,12 @@ public struct Point2D : IComparable<Point2D>
     {
         return new Point2D(p.x*d,p.y*d);
     }
+        public static Point2D operator/(Point2D p, double d)
+    {
+        return new Point2D(p.x/d,p.y/d);
+    }
+
+    public static Point2D zero = new Point2D(0d,0d);
 
     public double x;
     public double y;

@@ -22,8 +22,6 @@ public partial class ConstrainedDelaunayTriangulation
                 e0 = edges[i-1];
                 e1 = edges[i];
             }
-            e0+=3;
-            e1+=3;
 
             #if CHECK_VERTEX_ON_EDGE
             // add e0->e1 to constraints only if no vertecis lie on it
@@ -62,10 +60,11 @@ public partial class ConstrainedDelaunayTriangulation
             m_newEdges.Clear();
 
             {
+                bool found = false;
                 int t = m_incidentTriangles[constraint.Item1];
-                int p1;
-                int p2;
-                while(true)
+                int p1 = -1;
+                int p2 = -1;
+                while(!found)
                 {
                     OrientTriangle(t, constraint.Item1);
                     p1 = m_triangles[3*t+1];
@@ -73,9 +72,35 @@ public partial class ConstrainedDelaunayTriangulation
                     if(Intersect(p1,p2, constraint.Item1, constraint.Item2))
                     {
                         m_intersectEdges.Add((p1,p2));
-                        break;
+                        found = true;
                     }
-                    t = m_neighbors[3*t+0];
+                    else
+                    {
+                        t = m_neighbors[3*t+0];
+                        if(-1 == t)
+                        {
+                            break;
+                        }
+                    }
+                }
+                if(!found)
+                {
+                    t = m_incidentTriangles[constraint.Item1];
+                    while(!found)
+                    {
+                        OrientTriangle(t, constraint.Item1);
+                        p1 = m_triangles[3*t+1];
+                        p2 = m_triangles[3*t+2];
+                        if(Intersect(p1,p2, constraint.Item1, constraint.Item2))
+                        {
+                            m_intersectEdges.Add((p1,p2));
+                            found = true;
+                        }
+                        else
+                        {
+                            t = m_neighbors[3*t+2];
+                        }
+                    }
                 }
 
                 t = m_neighbors[3*t+1];

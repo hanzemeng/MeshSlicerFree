@@ -19,7 +19,7 @@ public class ConstrainedDelaunayTriangulationTest : MonoBehaviour
     [ContextMenu("Triangulate")]
     public void Triangulate()
     {
-        List<Point2D> positions = new List<Point2D>();
+        HashSet<Point2D> positions = new HashSet<Point2D>();
         foreach(Transform child in pointsParent)
         {
             if(false == child.gameObject.activeSelf)
@@ -35,7 +35,7 @@ public class ConstrainedDelaunayTriangulationTest : MonoBehaviour
             edges.Add((i+1)%positions.Count);
         }
         ConstrainedDelaunayTriangulation cdt = new ConstrainedDelaunayTriangulation();
-        var res = cdt.Triangulate(positions,edges);
+        var res = cdt.Triangulate(positions.ToList(),edges);
 
         Mesh m = new Mesh();
         m.vertices = positions.Select(x=>(Vector3)(x.ToVector2())).ToArray();
@@ -76,6 +76,7 @@ public class ConstrainedDelaunayTriangulationTest : MonoBehaviour
         for(int i=0; i<pointCount; i++)
         {
             Transform t = Instantiate(pointPrefab,pointsParent).transform;
+            t.name = i.ToString();
             t.position = pointRange * Random.insideUnitCircle;
             t.localScale = pointScale*Vector3.one;
         }

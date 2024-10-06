@@ -63,6 +63,14 @@ public partial class ConstrainedDelaunayTriangulation
     private List<Point2D> m_vertices;
     private HashSet<(int,int)> m_constraints;
 
+    private Point2D m_verticesCenter;
+    private int m_p0,m_p1,m_p2;
+    private List<int> m_verticesProcessOrder;
+    private Comparer<int> m_verticesProcessOrderComparer;
+    private Tree<int> m_convexHull;
+    private Stack<int> m_delunarlizeStack;
+
+
     private List<int> m_triangles;
     private List<int> m_neighbors;
     private Stack<int> m_flippedTriangles;
@@ -74,7 +82,7 @@ public partial class ConstrainedDelaunayTriangulation
     private List<(int,int)> m_intersectEdges;
     private List<(int,int)> m_newEdges;
 
-    List<int> m_inDomain;
+    private List<int> m_inDomain;
 
 
     // c and n are eachother's 1st (not 0th) neighbor
@@ -127,6 +135,39 @@ public partial class ConstrainedDelaunayTriangulation
         {
             OrientTriangle(cn2, p2, p0);
             m_neighbors[3*cn2+1] = n;
+        }
+    }
+
+    // set n as t's neighbor
+    void AssignNeighbor(int t, int p0, int p1, int n)
+    {
+        if(-1 == t)
+        {
+            return;
+        }
+        int pos = 0;
+        for(int i=0; i<3; i++)
+        {
+            if(p0 == m_triangles[3*t+i] || p1 == m_triangles[3*t+i])
+            {
+                pos+=i;
+            }
+        }
+        if(1 == pos)
+        {
+            m_neighbors[3*t+0] = n;
+        }
+        else if(3 == pos)
+        {
+            m_neighbors[3*t+1] = n;
+        }
+        else if(2 == pos)
+        {
+            m_neighbors[3*t+2] = n;
+        }
+        else
+        {
+            throw new System.Exception();
         }
     }
 
