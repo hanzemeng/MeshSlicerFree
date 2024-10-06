@@ -52,7 +52,7 @@ public partial class ConstrainedDelaunayTriangulation
 
         foreach((int,int) constraint in m_constraints)
         {
-            if(-1 != FindIncidentTriangles(constraint.Item1, constraint.Item2).Item1)
+            if(-1 != GetEdgeIncident(constraint.Item1,constraint.Item2).Item1)
             {
                 continue;
             }
@@ -61,7 +61,7 @@ public partial class ConstrainedDelaunayTriangulation
 
             {
                 bool found = false;
-                int t = m_incidentTriangles[constraint.Item1];
+                int t = m_verticesIncidentTriangles[constraint.Item1];
                 int p1 = -1;
                 int p2 = -1;
                 while(!found)
@@ -76,7 +76,7 @@ public partial class ConstrainedDelaunayTriangulation
                     }
                     else
                     {
-                        t = m_neighbors[3*t+0];
+                        t = GetNeighbor(constraint.Item1, p1, t);
                         if(-1 == t)
                         {
                             break;
@@ -85,7 +85,7 @@ public partial class ConstrainedDelaunayTriangulation
                 }
                 if(!found)
                 {
-                    t = m_incidentTriangles[constraint.Item1];
+                    t = m_verticesIncidentTriangles[constraint.Item1];
                     while(!found)
                     {
                         OrientTriangle(t, constraint.Item1);
@@ -98,12 +98,12 @@ public partial class ConstrainedDelaunayTriangulation
                         }
                         else
                         {
-                            t = m_neighbors[3*t+2];
+                            t = GetNeighbor(constraint.Item1, p2, t);
                         }
                     }
                 }
 
-                t = m_neighbors[3*t+1];
+                t = GetNeighbor(p1,p2,t);
                 OrientTriangle(t,p1,p2);
                 while(true)
                 {
@@ -117,13 +117,13 @@ public partial class ConstrainedDelaunayTriangulation
                     if(Intersect(p0,p1,constraint.Item1, constraint.Item2))
                     {
                         m_intersectEdges.Add((p0,p1));
-                        t = m_neighbors[3*t+0];
+                        t = GetNeighbor(p0,p1,t);
                         OrientTriangle(t, p0, p1);
                     }
                     else if(Intersect(p0,p2,constraint.Item1, constraint.Item2))
                     {
                         m_intersectEdges.Add((p0,p2));
-                        t = m_neighbors[3*t+2];
+                        t = GetNeighbor(p0,p2,t);
                         OrientTriangle(t, p0, p2);
                     }
                     else
@@ -138,7 +138,7 @@ public partial class ConstrainedDelaunayTriangulation
                 {
                     int p1 = m_intersectEdges[0].Item1;
                     int p2 = m_intersectEdges[0].Item2;
-                    (int, int) ts = FindIncidentTriangles(p1,p2);
+                    (int, int) ts = GetEdgeIncident(p1,p2);
                     int t0 = ts.Item1;
                     int t1 = ts.Item2;
 
@@ -185,7 +185,7 @@ public partial class ConstrainedDelaunayTriangulation
                     {
                         int p1 = m_newEdges[i].Item1;
                         int p2 = m_newEdges[i].Item2;
-                        (int, int) ts = FindIncidentTriangles(p1,p2);
+                        (int, int) ts = GetEdgeIncident(p1,p2);
                         int t0 = ts.Item1;
                         int t1 = ts.Item2;
 

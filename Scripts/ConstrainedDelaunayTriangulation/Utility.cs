@@ -70,18 +70,17 @@ public partial class ConstrainedDelaunayTriangulation
     private Tree<int> m_convexHull;
     private Stack<int> m_delunarlizeStack;
 
-
     private List<int> m_triangles;
-    private List<int> m_neighbors;
     private Stack<int> m_flippedTriangles;
 
-    private List<int> m_incidentTriangles;
-    private Queue<int> m_findToVisit;
-    private HashSet<int> m_findVisited;
-
+    private List<int> m_verticesIncidentTriangles;
+    private Dictionary<(int,int),(int,int)> m_edgesIncidentTriangles;
+    
     private List<(int,int)> m_intersectEdges;
     private List<(int,int)> m_newEdges;
 
+    private Queue<int> m_findToVisit;
+    private HashSet<int> m_findVisited;
     private List<int> m_inDomain;
 
 
@@ -92,100 +91,110 @@ public partial class ConstrainedDelaunayTriangulation
         int p1 = m_triangles[3*c+1];
         int p2 = m_triangles[3*c+2];
         int p3 = m_triangles[3*n+0];
-        int cn0 = m_neighbors[3*c+0];
-        int cn2 = m_neighbors[3*c+2];
-        int nn0 = m_neighbors[3*n+0];
-        int nn2 = m_neighbors[3*n+2];
 
-        m_triangles[3*c+0] = p0;
-        m_triangles[3*c+1] = p1;
+        //m_triangles[3*c+0] = p0;
+        //m_triangles[3*c+1] = p1;
         m_triangles[3*c+2] = p3;
         m_triangles[3*n+0] = p0;
         m_triangles[3*n+1] = p3;
         m_triangles[3*n+2] = p2;
 
-        m_incidentTriangles[p0] = c;
-        m_incidentTriangles[p1] = c;
-        m_incidentTriangles[p3] = c;
-        m_incidentTriangles[p2] = n;
+        //m_verticesIncidentTriangles[p0] = c;
+        m_verticesIncidentTriangles[p1] = c;
+        m_verticesIncidentTriangles[p2] = n;
+        //m_verticesIncidentTriangles[p3] = c;
 
-        m_neighbors[3*c+0] = cn0;
-        if(-1 != cn0)
-        {
-            OrientTriangle(cn0, p0, p1);
-            m_neighbors[3*cn0+1] = c;
-        }
-        m_neighbors[3*c+1] = nn2;
-        if(-1 != nn2)
-        {
-            OrientTriangle(nn2, p3, p1);
-            m_neighbors[3*nn2+1] = c;
-        }
-        m_neighbors[3*c+2] = n;
+        RemoveEdgeIncident(p1,p2,c);
+        RemoveEdgeIncident(p1,p2,n);
+        AddEdgeIncident(p0,p3,c);
+        AddEdgeIncident(p0,p3,n);
 
-        m_neighbors[3*n+0] = c;
-        m_neighbors[3*n+1] = nn0;
-        if(-1 != nn0)
-        {
-            OrientTriangle(nn0, p2, p3);
-            m_neighbors[3*nn0+1] = n;
-        }
-        m_neighbors[3*n+2] = cn2;
-        if(-1 != cn2)
-        {
-            OrientTriangle(cn2, p2, p0);
-            m_neighbors[3*cn2+1] = n;
-        }
+        //RemoveEdgeIncident(p0,p1,c);
+        RemoveEdgeIncident(p1,p3,n);
+        //RemoveEdgeIncident(p3,p2,n);
+        RemoveEdgeIncident(p2,p0,c);
+        //AddEdgeIncident(p0,p1,c);
+        AddEdgeIncident(p1,p3,c);
+        //AddEdgeIncident(p3,p2,n);
+        AddEdgeIncident(p2,p0,n);
     }
 
-    // set n as t's neighbor
-    void AssignNeighbor(int t, int p0, int p1, int n)
+    private int GetNeighbor(int e0, int e1, int t)
     {
-        if(-1 == t)
+        SortTwoInts(ref e0, ref e1);
+        (int,int) old = m_edgesIncidentTriangles[(e0,e1)];
+        if(old.Item1 == t)
         {
-            return;
+            return old.Item2;
         }
-        int pos = 0;
-        for(int i=0; i<3; i++)
+        return old.Item1;
+    }
+    private (int,int) GetEdgeIncident(int e0, int e1)
+    {
+        SortTwoInts(ref e0, ref e1);
+        if(!m_edgesIncidentTriangles.ContainsKey((e0,e1)))
         {
-            if(p0 == m_triangles[3*t+i] || p1 == m_triangles[3*t+i])
-            {
-                pos+=i;
-            }
+            return (-1,-1);
         }
-        if(1 == pos)
+        return m_edgesIncidentTriangles[(e0,e1)];
+    }
+    private void AddEdgeIncident(int e0, int e1, int t)
+    {
+        SortTwoInts(ref e0, ref e1);
+        if(!m_edgesIncidentTriangles.ContainsKey((e0,e1)))
         {
-            m_neighbors[3*t+0] = n;
-        }
-        else if(3 == pos)
-        {
-            m_neighbors[3*t+1] = n;
-        }
-        else if(2 == pos)
-        {
-            m_neighbors[3*t+2] = n;
+            m_edgesIncidentTriangles[(e0,e1)] = (t,-1);
         }
         else
         {
-            throw new System.Exception();
+            (int,int) old = m_edgesIncidentTriangles[(e0,e1)];
+            m_edgesIncidentTriangles[(e0,e1)] = (old.Item1, t);
+        }
+    }
+    private void RemoveEdgeIncident(int e0, int e1, int t)
+    {
+        SortTwoInts(ref e0, ref e1);
+        (int,int) old = m_edgesIncidentTriangles[(e0,e1)];
+        (int,int) res;
+        if(t == old.Item1)
+        {
+            res = (old.Item2, -1);
+        }
+        else
+        {
+            res = (old.Item1, -1);
+        }
+        if(-1 == res.Item1 && -1 == res.Item2)
+        {
+            m_edgesIncidentTriangles.Remove((e0,e1));
+        }
+        else
+        {
+            m_edgesIncidentTriangles[(e0,e1)] = res;
+        }
+    }
+    private void SortTwoInts(ref int a, ref int b)
+    {
+        if(a>b)
+        {
+            int temp = a;
+            a = b;
+            b = temp;
         }
     }
 
-    private int AddVertex(Point2D p)
-    {
-        m_vertices.Add(p);
-        m_incidentTriangles.Add(-1);
-        return m_vertices.Count-1;
-    }
+    //private int AddVertex(Point2D p)
+    //{
+    //    m_vertices.Add(p);
+    //    m_verticesIncidentTriangles.Add(-1);
+    //    return m_vertices.Count-1;
+    //}
 
     private int AddTriangle(int p1, int p2, int p3)
     {
         m_triangles.Add(p1);
         m_triangles.Add(p2);
         m_triangles.Add(p3);
-        m_neighbors.Add(-1);
-        m_neighbors.Add(-1);
-        m_neighbors.Add(-1);
         return m_triangles.Count/3-1;
     }
 
@@ -230,10 +239,6 @@ public partial class ConstrainedDelaunayTriangulation
             m_triangles[3*t+0] = m_triangles[3*t+1];
             m_triangles[3*t+1] = m_triangles[3*t+2];
             m_triangles[3*t+2] = temp;
-            temp = m_neighbors[3*t+0];
-            m_neighbors[3*t+0] = m_neighbors[3*t+1];
-            m_neighbors[3*t+1] = m_neighbors[3*t+2];
-            m_neighbors[3*t+2] = temp;
         }
         else if(2 == i)
         {
@@ -241,10 +246,6 @@ public partial class ConstrainedDelaunayTriangulation
             m_triangles[3*t+0] = m_triangles[3*t+2];
             m_triangles[3*t+2] = m_triangles[3*t+1];
             m_triangles[3*t+1] = temp;
-            temp = m_neighbors[3*t+0];
-            m_neighbors[3*t+0] = m_neighbors[3*t+2];
-            m_neighbors[3*t+2] = m_neighbors[3*t+1];
-            m_neighbors[3*t+1] = temp;
         }
         else
         {
@@ -252,61 +253,9 @@ public partial class ConstrainedDelaunayTriangulation
         }
     }
 
-    private (int,int) FindIncidentTriangles(int p0, int p1)
-    {
-        m_findToVisit.Clear();
-        m_findVisited.Clear();
-        m_findToVisit.Enqueue(m_incidentTriangles[p0]);
-        m_findVisited.Add(-1);
-
-        int res0 = -1;
-        int res1 = -1;
-
-        while(0 != m_findToVisit.Count)
-        {
-            int t = m_findToVisit.Dequeue();
-            if(m_findVisited.Contains(t))
-            {
-                continue;
-            }
-            m_findVisited.Add(t);
-
-            bool b0 = ContainsVertex(t,p0);
-            bool b1 = ContainsVertex(t,p1);
-
-            if(b0 && b1)
-            {
-                if(-1 == res0)
-                {
-                    res0 = t;
-                }
-                else
-                {
-                    res1 = t;
-                    break;
-                }
-                m_findToVisit.Enqueue(m_neighbors[3*t+0]);
-                m_findToVisit.Enqueue(m_neighbors[3*t+1]);
-                m_findToVisit.Enqueue(m_neighbors[3*t+2]);
-            }
-            else if(b0 || b1)
-            {
-                m_findToVisit.Enqueue(m_neighbors[3*t+0]);
-                m_findToVisit.Enqueue(m_neighbors[3*t+1]);
-                m_findToVisit.Enqueue(m_neighbors[3*t+2]);
-            }
-        }
-
-        return (res0,res1);
-    }
-
     private bool ContainsVertex(int t, int p)
     {
         return p == m_triangles[3*t+0] || p == m_triangles[3*t+1] || p == m_triangles[3*t+2];
-    }
-    private bool ContainsGhostVertex(int t)
-    {
-        return m_triangles[3*t+0]<3 || m_triangles[3*t+1]<3 || m_triangles[3*t+2]<3;
     }
 }
 

@@ -36,7 +36,6 @@ public partial class ConstrainedDelaunayTriangulation
         });
 
         m_triangles = new();
-        m_neighbors = new();
         m_convexHull = new(Comparer<int>.Create((a,b)=>
         {
             Point2D ad = m_vertices[a] - m_verticesCenter;
@@ -57,7 +56,8 @@ public partial class ConstrainedDelaunayTriangulation
         }));
         m_delunarlizeStack = new ();
         m_flippedTriangles = new();
-        m_incidentTriangles = new();
+        m_verticesIncidentTriangles = new();
+        m_edgesIncidentTriangles = new();
         m_findToVisit = new();
         m_findVisited = new();
         m_intersectEdges = new();
@@ -72,11 +72,11 @@ public partial class ConstrainedDelaunayTriangulation
         m_p0 = m_p1 = m_p2 = -1;
         //m_verticesProcessOrder.Clear();
         m_triangles.Clear();
-        m_neighbors.Clear();
         m_convexHull.Clear();
         m_delunarlizeStack.Clear();
         m_flippedTriangles.Clear();
-        m_incidentTriangles.Clear();
+        //m_verticesIncidentTriangles.Clear();
+        m_edgesIncidentTriangles.Clear();
         m_findToVisit.Clear();
         m_findVisited.Clear();
         m_intersectEdges.Clear();

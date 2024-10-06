@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Hanzzz.MeshSlicerFree
 {
 
@@ -12,7 +10,7 @@ public partial class ConstrainedDelaunayTriangulation
             var it1 = m_convexHull.GetNextNode(it0);
             int p0 = it0.value;
             int p1 = it1.value;
-            int t0 = FindIncidentTriangles(p0,p1).Item1;
+            int t0 = GetEdgeIncident(p0,p1).Item1;
 
             m_findToVisit.Clear();
             m_findVisited.Clear();
@@ -40,7 +38,7 @@ public partial class ConstrainedDelaunayTriangulation
 
             for(int i=0; i<3; i++)
             {
-                int n = m_neighbors[3*t+i];
+                int n = GetNeighbor(m_triangles[3*t+i],m_triangles[3*t+(i+1)%3], t);
                 if(-1 == n || 0 != m_inDomain[n])
                 {
                     continue;

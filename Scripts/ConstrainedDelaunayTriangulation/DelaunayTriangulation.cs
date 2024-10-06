@@ -8,13 +8,19 @@ public partial class ConstrainedDelaunayTriangulation
 {
     private void DelaunayTriangulation(List<Point2D> vertices)
     {
-        for(int i=0; i<vertices.Count; i++)
-        {
-            AddVertex(vertices[i]);
-            m_verticesCenter += vertices[i];
-        }
+        m_vertices = vertices;
+        m_verticesIncidentTriangles.Resize(m_vertices.Count);
 
-        m_verticesCenter /= (double)vertices.Count;
+        // use Kahan summation algorithm to reduce error
+        Point2D compensation = Point2D.zero;
+        for(int i=0; i<m_vertices.Count; i++)
+        {
+            Point2D temp0 = m_vertices[i] - compensation;
+            Point2D temp1 = m_verticesCenter + temp0;
+            compensation = (temp1 - m_verticesCenter) - temp0;
+            m_verticesCenter = temp1;
+        }
+        m_verticesCenter /= (double)m_vertices.Count;
 
         double dis = (m_vertices[0] - m_verticesCenter).SquaredMagnitude();
         m_p0 = 0;
@@ -84,9 +90,12 @@ public partial class ConstrainedDelaunayTriangulation
         }
 
         AddTriangle(m_p0, m_p1, m_p2);
-        m_incidentTriangles[m_p0] = 0;
-        m_incidentTriangles[m_p1] = 0;
-        m_incidentTriangles[m_p2] = 0;
+        m_verticesIncidentTriangles[m_p0] = 0;
+        m_verticesIncidentTriangles[m_p1] = 0;
+        m_verticesIncidentTriangles[m_p2] = 0;
+        AddEdgeIncident(m_p0,m_p1,0);
+        AddEdgeIncident(m_p1,m_p2,0);
+        AddEdgeIncident(m_p2,m_p1,0);
         m_convexHull.Insert(m_p0);
         m_convexHull.Insert(m_p1);
         m_convexHull.Insert(m_p2);
@@ -135,10 +144,11 @@ public partial class ConstrainedDelaunayTriangulation
             if(1 == ori)
             {
                 int t = AddTriangle(p0,p2,p1);
-                int n = FindIncidentTriangles(p1,p2).Item1;
-                m_neighbors[3*t+1] = n;
-                AssignNeighbor(n,p1,p2,t);
-                m_incidentTriangles[p0] = t;
+                int n = GetEdgeIncident(p1,p2).Item1;
+                m_verticesIncidentTriangles[p0] = t;
+                AddEdgeIncident(p0,p2,t);
+                AddEdgeIncident(p2,p1,t);
+                AddEdgeIncident(p1,p0,t);
                 Delunarlize(t, p0);
 
                 var it3 = GetPreviousNode(it1);                
@@ -146,16 +156,12 @@ public partial class ConstrainedDelaunayTriangulation
                 while(1 == Orient2D(p3,p0,p1))
                 {
                     t = AddTriangle(p0,p1,p3);
-                    int n0 = FindIncidentTriangles(p0,p1).Item1;
-                    int n1 = FindIncidentTriangles(p1,p3).Item1;
-                    m_neighbors[3*t+0] = n0;
-                    AssignNeighbor(n0,p0,p1,t);
-                    m_neighbors[3*t+1] = n1;
-                    AssignNeighbor(n1,p1,p3,t);
+                    AddEdgeIncident(p0,p1,t);
+                    AddEdgeIncident(p1,p3,t);
+                    AddEdgeIncident(p3,p0,t);
                     Delunarlize(t, p0);
 
-                    m_convexHull.Delete(it1.value);
-                    //m_convexHull.Delete(it1);
+                    m_convexHull.Delete(it1.value); // RBTree's delete ruins every iterator
                     it1 = m_convexHull.GetNode(p3);
                     it3 = it1;
                     it3 = GetPreviousNode(it3);
@@ -164,21 +170,17 @@ public partial class ConstrainedDelaunayTriangulation
                     p1 = it1.value;
                 }
            
-                it3 = GetNextNode(m_convexHull.GetNode(p2)); // RBTree's delete ruins every iterator
+                it3 = GetNextNode(m_convexHull.GetNode(p2)); 
                 p3 = it3.value;
                 while(1 == Orient2D(p2,p0,p3))
                 {
                     t = AddTriangle(p0,p3,p2);
-                    int n1 = FindIncidentTriangles(p3,p2).Item1;
-                    int n2 = FindIncidentTriangles(p2,p0).Item1;
-                    m_neighbors[3*t+1] = n1;
-                    AssignNeighbor(n1,p3,p2,t);
-                    m_neighbors[3*t+2] = n2;
-                    AssignNeighbor(n2,p2,p0,t);
+                    AddEdgeIncident(p0,p3,t);
+                    AddEdgeIncident(p3,p2,t);
+                    AddEdgeIncident(p2,p0,t);
                     Delunarlize(t, p0);
 
-                    m_convexHull.Delete(it2.value);
-                    //m_convexHull.Delete(it2);
+                    m_convexHull.Delete(it2.value); // RBTree's delete ruins every iterator
                     it2 = m_convexHull.GetNode(p3);
                     it3 = it2;
                     it3 = GetNextNode(it3);
@@ -189,32 +191,33 @@ public partial class ConstrainedDelaunayTriangulation
             }
             else if(0 == ori)
             {
-                int t0 = FindIncidentTriangles(p1,p2).Item1;
+                // wasn't able to find an input to test this
+                int t0 = GetEdgeIncident(p1,p2).Item1;
                 OrientTriangle(t0,p1,p2);
                 int p3 = m_triangles[3*t0+0];
-                int n0 = m_neighbors[3*t0+0];
-                int n2 = m_neighbors[3*t0+2];
                 m_triangles[3*t0+0] = p0;
                 m_triangles[3*t0+1] = p3;
                 m_triangles[3*t0+2] = p1;
                 int t1 = AddTriangle(p0,p2,p3);
 
-                m_neighbors[3*t0+0] = t1;
-                m_neighbors[3*t0+1] = n0;
-                AssignNeighbor(n0,p3,p1,t0);
-                m_neighbors[3*t0+2] = -1;
-                m_neighbors[3*t1+0] = -1;
-                m_neighbors[3*t1+1] = n2;
-                AssignNeighbor(n2,p2,p3,t1);
-                m_neighbors[3*t1+2] = t0;
+                m_verticesIncidentTriangles[p0] = t0;
+                //m_verticesIncidentTriangles[p1] = t0;
+                m_verticesIncidentTriangles[p2] = t1;
+                //m_verticesIncidentTriangles[p3] = t0;
 
-                m_incidentTriangles[p0] = t0;
-                m_incidentTriangles[p3] = t0;
-                m_incidentTriangles[p1] = t0;
-                m_incidentTriangles[p2] = t1;
+                AddEdgeIncident(p0,p3,t0);
+                AddEdgeIncident(p0,p3,t1);
 
-                Delunarlize(t0, p0);
-                Delunarlize(t1, p0);
+                //RemoveEdgeIncident(p3,p1,t0);
+                RemoveEdgeIncident(p1,p2,t0);
+                RemoveEdgeIncident(p2,p3,t0);
+                //AddEdgeIncident(p3,p1,t0);
+                AddEdgeIncident(p1,p0,t0);
+                AddEdgeIncident(p0,p2,t1);
+                AddEdgeIncident(p2,p3,t1);
+                
+                Delunarlize(t0,p0);
+                Delunarlize(t1,p0);
             }
             else
             {
@@ -235,7 +238,7 @@ public partial class ConstrainedDelaunayTriangulation
             OrientTriangle(t, p);
             int p1 = m_triangles[3*t+1];
             int p2 = m_triangles[3*t+2];
-            int n = m_neighbors[3*t+1];
+            int n = GetNeighbor(p1,p2,t);
             if(-1 == n)
             {
                 continue;
