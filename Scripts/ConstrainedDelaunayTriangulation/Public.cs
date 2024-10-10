@@ -9,7 +9,7 @@ public partial class ConstrainedDelaunayTriangulation
 {
     public ConstrainedDelaunayTriangulation()
     {
-        m_vertices = new();
+        //m_vertices = new();
         m_constraints = new();
         m_verticesCenter = Point2D.zero;
         m_p0 = m_p1 = m_p2 = -1;
@@ -66,7 +66,7 @@ public partial class ConstrainedDelaunayTriangulation
     }
     public void Reset()
     {
-        m_vertices.Clear();
+        //m_vertices.Clear();
         m_constraints.Clear();
         m_verticesCenter = Point2D.zero;
         m_p0 = m_p1 = m_p2 = -1;
@@ -84,7 +84,6 @@ public partial class ConstrainedDelaunayTriangulation
         m_inDomain.Clear();
     }
 
-    public const float INPUT_VERTICES_RANGE = 10000f;
     public void Triangulate(List<Point2D> vertices, List<int> edges, List<int> resTriangles)
     {
         Reset();

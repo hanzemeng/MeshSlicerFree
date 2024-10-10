@@ -95,7 +95,7 @@ public partial class ConstrainedDelaunayTriangulation
         m_verticesIncidentTriangles[m_p2] = 0;
         AddEdgeIncident(m_p0,m_p1,0);
         AddEdgeIncident(m_p1,m_p2,0);
-        AddEdgeIncident(m_p2,m_p1,0);
+        AddEdgeIncident(m_p2,m_p0,0);
         m_convexHull.Insert(m_p0);
         m_convexHull.Insert(m_p1);
         m_convexHull.Insert(m_p2);
@@ -144,7 +144,6 @@ public partial class ConstrainedDelaunayTriangulation
             if(1 == ori)
             {
                 int t = AddTriangle(p0,p2,p1);
-                int n = GetEdgeIncident(p1,p2).Item1;
                 m_verticesIncidentTriangles[p0] = t;
                 AddEdgeIncident(p0,p2,t);
                 AddEdgeIncident(p2,p1,t);
@@ -163,8 +162,7 @@ public partial class ConstrainedDelaunayTriangulation
 
                     m_convexHull.Delete(it1.value); // RBTree's delete ruins every iterator
                     it1 = m_convexHull.GetNode(p3);
-                    it3 = it1;
-                    it3 = GetPreviousNode(it3);
+                    it3 = GetPreviousNode(it1);
                     
                     p3 = it3.value;
                     p1 = it1.value;
@@ -182,8 +180,7 @@ public partial class ConstrainedDelaunayTriangulation
 
                     m_convexHull.Delete(it2.value); // RBTree's delete ruins every iterator
                     it2 = m_convexHull.GetNode(p3);
-                    it3 = it2;
-                    it3 = GetNextNode(it3);
+                    it3 = GetNextNode(it2);
 
                     p3 = it3.value;
                     p2 = it2.value;

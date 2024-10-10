@@ -23,6 +23,11 @@ public partial class ConstrainedDelaunayTriangulation
                 e1 = edges[i];
             }
 
+            if(e0 == e1)
+            {
+                continue;
+            }
+
             #if CHECK_VERTEX_ON_EDGE
             // add e0->e1 to constraints only if no vertecis lie on it
             for(int j=3; j <m_vertices.Count; j++)
@@ -99,6 +104,10 @@ public partial class ConstrainedDelaunayTriangulation
                         else
                         {
                             t = GetNeighbor(constraint.Item1, p2, t);
+                            if(-1 == t)
+                            {
+                                throw new System.Exception();
+                            }
                         }
                     }
                 }
