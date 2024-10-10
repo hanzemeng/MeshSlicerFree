@@ -57,6 +57,11 @@ public class MeshSlicerTest : MonoBehaviour
         string log = $"Slice Time: {timer.ElapsedMilliseconds}ms.";
         logText.text = log;
         UnityEngine.Debug.Log(log);
+        if(null == result.Item1)
+        {
+            UnityEngine.Debug.Log("Slice plane does not intersect slice target.");
+            return;
+        }
         result.Item1.transform.SetParent(transform,false);
         result.Item2.transform.SetParent(transform,false);
         result.Item1.transform.position += splitDistance * plane.up;

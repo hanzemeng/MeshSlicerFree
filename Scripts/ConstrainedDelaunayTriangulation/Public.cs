@@ -40,18 +40,6 @@ public partial class ConstrainedDelaunayTriangulation
         {
             Point2D ad = m_vertices[a] - m_verticesCenter;
             Point2D bd = m_vertices[b] - m_verticesCenter;
-
-            double ar = ad.Radian();
-            double br = bd.Radian();
-            if(ar<0d)
-            {
-                ar += 2d*Math.PI;
-            }
-            if(br<0d)
-            {
-                br += 2d*Math.PI;
-            }
-
             return ad.Radian().CompareTo(bd.Radian());
         }));
         m_delunarlizeStack = new ();
@@ -87,6 +75,13 @@ public partial class ConstrainedDelaunayTriangulation
     public void Triangulate(List<Point2D> vertices, List<int> edges, List<int> resTriangles)
     {
         Reset();
+        //string s="";
+        //foreach(Point2D v in vertices)
+        //{
+        //    s += v.ToString();
+        //    s += "\n";
+        //}
+        //Debug.Log(s);
         DelaunayTriangulation(vertices);
         if(null != edges)
         {

@@ -1,8 +1,43 @@
+//#define USE_WINDING_NUMBER // use winding number to determine if a triangle is part of the input domain.
+// Only use this if intersection contains intersecting edges or non-closed polygons.
+using System;
+
 namespace Hanzzz.MeshSlicerFree
 {
 
 public partial class ConstrainedDelaunayTriangulation
 {
+    #if USE_WINDING_NUMBER
+    private void DomainCalculation()
+    {
+        m_inDomain.Resize(m_triangles.Count/3, 0);
+        for(int i=0; i<m_triangles.Count; i+=3)
+        {
+            int t0 = m_triangles[i+0];
+            int t1 = m_triangles[i+1];
+            int t2 = m_triangles[i+2];
+            Point2D center = (m_vertices[t0] + m_vertices[t1] + m_vertices[t2])/3d;
+
+            double wind = 0d;
+            foreach(var (e0,e1) in m_constraints)
+            {
+                Point2D d0 = m_vertices[e0] - center;
+                Point2D d1 = m_vertices[e1] - center;
+                double theta = Math.Atan2(Point2D.Cross(d0,d1), Point2D.Dot(d0,d1));
+                wind += theta;
+            }
+            wind /= 2d*Math.PI;
+            if(wind > 0.5d)
+            {
+                m_inDomain[i/3] = 1;
+            }
+            else
+            {
+                m_inDomain[i/3] = -1;
+            }
+        }
+    }
+    #else
     private void DomainCalculation()
     {
         {
@@ -58,6 +93,7 @@ public partial class ConstrainedDelaunayTriangulation
             }
         }
     }
+    #endif
 }
 
 }

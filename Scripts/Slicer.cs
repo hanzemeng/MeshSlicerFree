@@ -123,7 +123,7 @@ public class Slicer
             }
             else if(0 == o0 && 0 == o2)
             {
-                TwoVertexHelper(1 == o1, i,0,2);
+                TwoVertexHelper(1 == o1, i,2,0);
             }
             else if(0 == o1 && 0 == o2)
             {
@@ -164,14 +164,15 @@ public class Slicer
         if(isTop)
         {
             CopyTriangle(m_tTriangles, m_triangles, i);
+            m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p2i]],m_triangles[i+p2i],0,0d));
+            m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p1i]],m_triangles[i+p1i],0,0d));
         }
         else
         {
             CopyTriangle(m_bTriangles, m_triangles, i);
+            m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p1i]],m_triangles[i+p1i],0,0d));
+            m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p2i]],m_triangles[i+p2i],0,0d));
         }
-
-        m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p1i]],m_triangles[i+p1i],0,0d));
-        m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p2i]],m_triangles[i+p2i],0,0d));
     }
     // p0i is the offset of the vertex on the slice plane. p1i and p2i are in order of the triangle
     // isTop is true if p1i is above the slice plane
@@ -189,6 +190,8 @@ public class Slicer
             m_bTriangles.Add(m_triangles[i+p0i]);
             m_bTriangles.Add(-pi);
             m_bTriangles.Add(m_triangles[i+p2i]);
+            m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p0i]],m_triangles[i+p0i],0,0d));
+            m_iEdges.Add(AddIntersectionVertex(inter.Item1,m_triangles[i+p1i],m_triangles[i+p2i],inter.Item2));
         }
         else
         {
@@ -198,10 +201,9 @@ public class Slicer
             m_tTriangles.Add(m_triangles[i+p0i]);
             m_tTriangles.Add(-pi);
             m_tTriangles.Add(m_triangles[i+p2i]);
+            m_iEdges.Add(AddIntersectionVertex(inter.Item1,m_triangles[i+p1i],m_triangles[i+p2i],inter.Item2));
+            m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p0i]],m_triangles[i+p0i],0,0d));
         }
-
-        m_iEdges.Add(AddIntersectionVertex(m_vertices[m_triangles[i+p0i]],m_triangles[i+p0i],0,0d));
-        m_iEdges.Add(AddIntersectionVertex(inter.Item1,m_triangles[i+p1i],m_triangles[i+p2i],inter.Item2));
     }
     // p0i is the offset of the vertex on the different side of p1i and p2i. p1i and p2i are in order of the triangle
     // isTop is true if p0i is above the slice plane
@@ -225,6 +227,8 @@ public class Slicer
             m_bTriangles.Add(-pi1);
             m_bTriangles.Add(m_triangles[i+p2i]);
             m_bTriangles.Add(-pi2);
+            m_iEdges.Add(AddIntersectionVertex(inter2.Item1,m_triangles[i+p0i],m_triangles[i+p2i],inter2.Item2));
+            m_iEdges.Add(AddIntersectionVertex(inter1.Item1,m_triangles[i+p0i],m_triangles[i+p1i],inter1.Item2));
         }
         else
         {
@@ -237,9 +241,9 @@ public class Slicer
             m_tTriangles.Add(-pi1);
             m_tTriangles.Add(m_triangles[i+p2i]);
             m_tTriangles.Add(-pi2);
+            m_iEdges.Add(AddIntersectionVertex(inter1.Item1,m_triangles[i+p0i],m_triangles[i+p1i],inter1.Item2));
+            m_iEdges.Add(AddIntersectionVertex(inter2.Item1,m_triangles[i+p0i],m_triangles[i+p2i],inter2.Item2));
         }
-        m_iEdges.Add(AddIntersectionVertex(inter1.Item1,m_triangles[i+p0i],m_triangles[i+p1i],inter1.Item2));
-        m_iEdges.Add(AddIntersectionVertex(inter2.Item1,m_triangles[i+p0i],m_triangles[i+p2i],inter2.Item2));
     }
 
     private List<Point3D> m_vertices;

@@ -68,6 +68,10 @@ public struct Point2D : IComparable<Point2D>
     {
         return p1.x*p2.x+p1.y*p2.y;
     }
+    public static double Cross(Point2D p1, Point2D p2) // not the cross product, but the determinant 
+    {
+        return p1.x*p2.y-p1.y*p2.x;
+    }
     public static Point2D operator+(Point2D p1, Point2D p2)
     {
         return new Point2D(p1.x+p2.x,p1.y+p2.y);

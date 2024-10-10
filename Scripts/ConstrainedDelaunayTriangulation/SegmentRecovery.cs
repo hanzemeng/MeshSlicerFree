@@ -10,19 +10,8 @@ public partial class ConstrainedDelaunayTriangulation
     {
         for(int i=1; i<edges.Count; i+=2)
         {
-            int e0;
-            int e1;
-            if(edges[i]<edges[i-1])
-            {
-                e0 = edges[i];
-                e1 = edges[i-1];
-            }
-            else
-            {
-                e0 = edges[i-1];
-                e1 = edges[i];
-            }
-
+            int e0 = edges[i-1];
+            int e1 = edges[i];
             if(e0 == e1)
             {
                 continue;
@@ -48,6 +37,10 @@ public partial class ConstrainedDelaunayTriangulation
                 }
             }
             #endif
+            if(m_constraints.Contains((e0,e1)) || m_constraints.Contains((e1,e0)))
+            {
+                throw new System.Exception();
+            }
             m_constraints.Add((e0,e1));
             #if CHECK_VERTEX_ON_EDGE
             NEXT:
