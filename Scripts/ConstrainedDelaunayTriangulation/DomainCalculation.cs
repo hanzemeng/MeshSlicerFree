@@ -1,4 +1,4 @@
-//#define USE_WINDING_NUMBER // use winding number to determine if a triangle is part of the input domain.
+#define USE_WINDING_NUMBER // use winding number to determine if a triangle is part of the input domain.
 // Only use this if intersection contains intersecting edges or non-closed polygons.
 using System;
 

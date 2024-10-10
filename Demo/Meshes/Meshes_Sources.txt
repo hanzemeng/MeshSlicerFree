@@ -1,0 +1,6 @@
+Functional_Differential_Gear_System comes from: https://www.thingiverse.com/thing:11836
+Protein_Model comes from: https://www.thingiverse.com/thing:12283
+
+Unlisted meshes are from the Unity Asset Store and I am not obligated to link them.
+
+None of the meshes were modified.
