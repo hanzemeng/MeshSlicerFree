@@ -139,11 +139,11 @@ public struct Point3D : IComparable<Point3D>
     public Vector3 ToVector3()
     {
         return new Vector3
-            (
-                FloatingPointConverter.DoubleToFloat(x),
-                FloatingPointConverter.DoubleToFloat(z), // swap z and y for predicates to work
-                FloatingPointConverter.DoubleToFloat(y)  // swap z and y for predicates to work
-            );
+        (
+            FloatingPointConverter.DoubleToFloat(x),
+            FloatingPointConverter.DoubleToFloat(z), // swap z and y for predicates to work
+            FloatingPointConverter.DoubleToFloat(y)  // swap z and y for predicates to work
+        );
     }
     public Point3D(double x, double y, double z)
     {

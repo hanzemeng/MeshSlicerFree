@@ -10,6 +10,7 @@ public partial class ConstrainedDelaunayTriangulation
     #if USE_WINDING_NUMBER
     private void DomainCalculation()
     {
+        const double WIND_THRESHOLD = 0.5d; // The smaller the number, the more triangles will be included. Should be a value in [0, 1].
         m_inDomain.Resize(m_triangles.Count/3, 0);
         for(int i=0; i<m_triangles.Count; i+=3)
         {
@@ -27,7 +28,7 @@ public partial class ConstrainedDelaunayTriangulation
                 wind += theta;
             }
             wind /= 2d*Math.PI;
-            if(wind > 0.5d)
+            if(wind > WIND_THRESHOLD)
             {
                 m_inDomain[i/3] = 1;
             }

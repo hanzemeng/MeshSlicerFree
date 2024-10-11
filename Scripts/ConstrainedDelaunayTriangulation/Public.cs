@@ -75,13 +75,6 @@ public partial class ConstrainedDelaunayTriangulation
     public void Triangulate(List<Point2D> vertices, List<int> edges, List<int> resTriangles)
     {
         Reset();
-        //string s="";
-        //foreach(Point2D v in vertices)
-        //{
-        //    s += v.ToString();
-        //    s += "\n";
-        //}
-        //Debug.Log(s);
         DelaunayTriangulation(vertices);
         if(null != edges)
         {

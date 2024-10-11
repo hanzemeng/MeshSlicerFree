@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Hanzzz.MeshSlicerFree
 {
@@ -11,7 +10,7 @@ public partial class ConstrainedDelaunayTriangulation
         m_vertices = vertices;
         m_verticesIncidentTriangles.Resize(m_vertices.Count);
 
-        // use Kahan summation algorithm to reduce error
+        // use Kahan summation algorithm to reduce error, honestly probably won't make any difference
         Point2D compensation = Point2D.zero;
         for(int i=0; i<m_vertices.Count; i++)
         {
@@ -186,9 +185,9 @@ public partial class ConstrainedDelaunayTriangulation
                     p2 = it2.value;
                 }
             }
-            else if(0 == ori)
+            //else if(0 == ori)
+            else // should only be for 0 == ori, but -1 == ori happens due to floating point error
             {
-                // wasn't able to find an input to test this
                 int t0 = GetEdgeIncident(p1,p2).Item1;
                 OrientTriangle(t0,p1,p2);
                 int p3 = m_triangles[3*t0+0];
@@ -216,10 +215,39 @@ public partial class ConstrainedDelaunayTriangulation
                 Delunarlize(t0,p0);
                 Delunarlize(t1,p0);
             }
-            else
-            {
-                throw new System.Exception();
-            }
+            //else // meant to handle -1 == ori, but this causes segment recovery phase not terminating
+            //{
+            //    // should happen only because of floating point error
+            //    int t0 = GetEdgeIncident(p1,p2).Item1;
+            //    OrientTriangle(t0,p1,p2);
+            //    int p3 = m_triangles[3*t0+0];
+            //    m_triangles[3*t0+0] = p0;
+            //    //m_triangles[3*t0+1] = p1;
+            //    //m_triangles[3*t0+2] = p2;
+            //    int t1 = AddTriangle(p0,p3,p1);
+            //    int t2 = AddTriangle(p0,p2,p3);
+            //    m_verticesIncidentTriangles[p0] = t0;
+            //    //m_verticesIncidentTriangles[p1] = t0;
+            //    //m_verticesIncidentTriangles[p2] = t0;
+            //    m_verticesIncidentTriangles[p3] = t1;
+
+            //    AddEdgeIncident(p0,p1,t0);
+            //    AddEdgeIncident(p0,p1,t1);
+            //    AddEdgeIncident(p0,p2,t0);
+            //    AddEdgeIncident(p0,p2,t2);
+            //    AddEdgeIncident(p0,p3,t1);
+            //    AddEdgeIncident(p0,p3,t2);
+
+            //    RemoveEdgeIncident(p3,p1,t0);
+            //    //RemoveEdgeIncident(p1,p2,t0);
+            //    RemoveEdgeIncident(p2,p3,t0);
+            //    AddEdgeIncident(p3,p1,t1);
+            //    //AddEdgeIncident(p1,p2,t0);
+            //    AddEdgeIncident(p2,p3,t2);
+
+            //    Delunarlize(t1,p0);
+            //    Delunarlize(t2,p0);
+            //}
             m_convexHull.Insert(p0);
         }
             

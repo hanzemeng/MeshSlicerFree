@@ -6,7 +6,7 @@ namespace Hanzzz.MeshSlicerFree
 public static class FloatingPointConverter
 {
     #if USE_DECIMAL
-    // expensive but keep decimals
+    // expensive but keep decimals, used for debugging
     public static double FloatToDouble(float val)
     {
         return (double)new decimal(val);
@@ -21,7 +21,7 @@ public static class FloatingPointConverter
     }
 
     #else
-    // cheap but decimals may be inaccurate, almost always not a problem for predicates
+    // cheap but decimals may be inaccurate, hopefully not a problem for predicates
     public static double FloatToDouble(float val)
     {
         return (double)(val);
