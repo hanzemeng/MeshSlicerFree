@@ -185,7 +185,7 @@ GameObject:
   - component: {fileID: 156439052}
   - component: {fileID: 156439051}
   m_Layer: 5
-  m_Name: Image
+  m_Name: Log
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -319,7 +319,20 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Slice Time: 6127ms.'
+  m_Text: 'All demos are done in the editor mode.
+
+
+    Select SlicerTest and right
+    click on Mesh Slicer Test;
+
+    you can click on Slice or Slice Async to run
+    the test.
+
+
+    Select SkinnedSlicerTest and right click on Mesh Slicer Test;
+
+    you
+    can click on Slice Skinned or Slice Skinned Async to run the test.'
 --- !u!222 &179647526
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -547,7 +560,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Slice Time: 105ms.'
+  m_Text: 'Slice Time: 40ms.'
 --- !u!222 &375132968
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -982,11 +995,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 646a75f054bd54fde9d861050413631a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  plane: {fileID: 1760457815}
-  target: {fileID: 1393724905}
+  plane: {fileID: 997781054}
+  target: {fileID: 2144193085}
   intersectionMaterial: {fileID: 2100000, guid: 0554f335a713c4a0d8c7f6d243711c69, type: 2}
   splitDistance: 1
-  logText: {fileID: 179647525}
+  logText: {fileID: 375132967}
 --- !u!4 &666192805
 Transform:
   m_ObjectHideFlags: 0
@@ -1217,7 +1230,7 @@ Transform:
   m_GameObject: {fileID: 997781053}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: 1.5}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1460,11 +1473,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1313546569}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &1393724905 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7792399354777785223, guid: 283c0193d43324929940f0cd5072e10a, type: 3}
-  m_PrefabInstance: {fileID: 2395910385716003860}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1393724906 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4592596201677486894, guid: 283c0193d43324929940f0cd5072e10a, type: 3}
