@@ -75,7 +75,10 @@ public partial class ConstrainedDelaunayTriangulation
     public void Triangulate(List<Point2D> vertices, List<int> edges, List<int> resTriangles)
     {
         Reset();
-        DelaunayTriangulation(vertices);
+        if(vertices.Count >= 3)
+        {
+            DelaunayTriangulation(vertices);
+        }
         if(null != edges)
         {
             SegmentRecovery(edges);

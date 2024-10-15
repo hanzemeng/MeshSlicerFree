@@ -39,7 +39,7 @@ public partial class ConstrainedDelaunayTriangulation
             #endif
             if(m_constraints.Contains((e0,e1)) || m_constraints.Contains((e1,e0)))
             {
-                throw new System.Exception();
+                continue;
             }
             m_constraints.Add((e0,e1));
             #if CHECK_VERTEX_ON_EDGE

@@ -9,8 +9,8 @@ public class MeshSlicerTest : MonoBehaviour
 {
     [Header("Right click on the title of the script to see the available tests.\n")]
 
-    public Transform plane;
-    public GameObject target;
+    public Transform slicePlane;
+    public GameObject sliceTarget;
     public Material intersectionMaterial;
     public float splitDistance;
 
@@ -64,37 +64,37 @@ public class MeshSlicerTest : MonoBehaviour
         }
         result.Item1.transform.SetParent(transform,false);
         result.Item2.transform.SetParent(transform,false);
-        result.Item1.transform.position += splitDistance * plane.up;
-        result.Item2.transform.position -= splitDistance * plane.up;
-        target.SetActive(false);
+        result.Item1.transform.position += splitDistance * slicePlane.up;
+        result.Item2.transform.position -= splitDistance * slicePlane.up;
+        sliceTarget.SetActive(false);
     }
 
     [ContextMenu("Slice")]
     public void Slice()
     {
         PreSliceOperation();
-        result = meshSlicer.Slice(target, Get3PointsOnPlane(new Plane(plane.up, plane.position)), intersectionMaterial);
+        result = meshSlicer.Slice(sliceTarget, Get3PointsOnPlane(new Plane(slicePlane.up, slicePlane.position)), intersectionMaterial);
         PostSliceOperation();
     }
     [ContextMenu("Slice Async")]
     public async void SliceAsync()
     {
         PreSliceOperation();
-        result = await meshSlicer.SliceAsync(target,Get3PointsOnPlane(new Plane(plane.up, plane.position)),intersectionMaterial);
+        result = await meshSlicer.SliceAsync(sliceTarget,Get3PointsOnPlane(new Plane(slicePlane.up, slicePlane.position)),intersectionMaterial);
         PostSliceOperation();
     }
     [ContextMenu("Slice Skinned")]
     public void SliceSkinned()
     {
         PreSliceOperation();
-        result = skinnedMeshSlicer.Slice(target, 0, 1, Get3PointsOnPlane(new Plane(plane.up, plane.position)), intersectionMaterial);
+        result = skinnedMeshSlicer.Slice(sliceTarget, 0, 1, Get3PointsOnPlane(new Plane(slicePlane.up, slicePlane.position)), intersectionMaterial);
         PostSliceOperation();
     }
     [ContextMenu("Slice Skinned Async")]
     public async void SliceSkinnedAsync()
     {
         PreSliceOperation();
-        result = await skinnedMeshSlicer.SliceAsync(target, 0, 1, Get3PointsOnPlane(new Plane(plane.up, plane.position)), intersectionMaterial);
+        result = await skinnedMeshSlicer.SliceAsync(sliceTarget, 0, 1, Get3PointsOnPlane(new Plane(slicePlane.up, slicePlane.position)), intersectionMaterial);
         PostSliceOperation();
     }
     
@@ -109,7 +109,7 @@ public class MeshSlicerTest : MonoBehaviour
         }
         meshSlicer = new MeshSlicer();
         skinnedMeshSlicer = new SkinnedMeshSlicer();
-        target.SetActive(true);
+        sliceTarget.SetActive(true);
     }
 }
 
