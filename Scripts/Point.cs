@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Hanzzz.MeshSlicerFree
@@ -34,8 +33,16 @@ public struct Point2D : IComparable<Point2D>
 
     public Point2D(Vector2 v)
     {
-        x=v.x;
-        y=v.y;
+        x=FloatingPointConverter.FloatToDouble(v.x);
+        y=FloatingPointConverter.FloatToDouble(v.y);
+    }
+    public Vector2 ToVector2()
+    {
+        return new Vector2
+        (
+            FloatingPointConverter.DoubleToFloat(x),
+            FloatingPointConverter.DoubleToFloat(y)
+        );
     }
     public Point2D(double x, double y)
     {
@@ -47,6 +54,42 @@ public struct Point2D : IComparable<Point2D>
     {
         return $"{x.ToString("F12")}, {y.ToString("F12")}";
     }
+
+    public double Radian()
+    {
+        return Math.Atan2(y,x);
+    }
+    public double SquaredMagnitude()
+    {
+        return Dot(this, this);
+    }
+
+    public static double Dot(Point2D p1, Point2D p2)
+    {
+        return p1.x*p2.x+p1.y*p2.y;
+    }
+    public static double Cross(Point2D p1, Point2D p2) // not the cross product, but the determinant 
+    {
+        return p1.x*p2.y-p1.y*p2.x;
+    }
+    public static Point2D operator+(Point2D p1, Point2D p2)
+    {
+        return new Point2D(p1.x+p2.x,p1.y+p2.y);
+    }
+    public static Point2D operator-(Point2D p1, Point2D p2)
+    {
+        return new Point2D(p1.x-p2.x,p1.y-p2.y);
+    }
+    public static Point2D operator*(Point2D p, double d)
+    {
+        return new Point2D(p.x*d,p.y*d);
+    }
+        public static Point2D operator/(Point2D p, double d)
+    {
+        return new Point2D(p.x/d,p.y/d);
+    }
+
+    public static Point2D zero = new Point2D(0d,0d);
 
     public double x;
     public double y;
@@ -89,13 +132,18 @@ public struct Point3D : IComparable<Point3D>
 
     public Point3D(Vector3 v)
     {
-        x=v.x;
-        y=v.z; // swap z and y for predicates to work
-        z=v.y; // swap z and y for predicates to work
+        x=FloatingPointConverter.FloatToDouble(v.x);
+        y=FloatingPointConverter.FloatToDouble(v.z); // swap z and y for predicates to work
+        z=FloatingPointConverter.FloatToDouble(v.y); // swap z and y for predicates to work
     }
     public Vector3 ToVector3()
     {
-        return new Vector3((float)x,(float)z,(float)y);
+        return new Vector3
+        (
+            FloatingPointConverter.DoubleToFloat(x),
+            FloatingPointConverter.DoubleToFloat(z), // swap z and y for predicates to work
+            FloatingPointConverter.DoubleToFloat(y)  // swap z and y for predicates to work
+        );
     }
     public Point3D(double x, double y, double z)
     {
@@ -166,30 +214,6 @@ public struct Point3D : IComparable<Point3D>
     public double x;
     public double y;
     public double z;
-}
-
-public class Vector2Comparator : IComparer<Vector2>
-{
-    public int Compare(Vector2 a, Vector2 b)
-    {
-        if(a.x < b.x)
-        {
-            return -1;
-        }
-        if(a.x > b.x)
-        {
-            return 1;
-        }
-        if(a.y < b.y)
-        {
-            return -1;
-        }
-        if(a.y > b.y)
-        {
-            return 1;
-        }
-        return 0;
-    }
 }
 
 }

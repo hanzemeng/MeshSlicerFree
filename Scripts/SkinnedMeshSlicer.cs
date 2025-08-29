@@ -28,7 +28,7 @@ public class SkinnedMeshSlicer
     private List<int>[] m_topTriangles;
     private List<int>[] m_bottomTriangles;
 
-    private List<Vector2> m_intersectionVerticesPlane;
+    private List<Point2D> m_intersectionVerticesPlane;
     private List<(Vector3, BoneWeight)> m_intersectionDatas;
     private List<int> m_intersectionTriangles;
 
@@ -272,7 +272,7 @@ public class SkinnedMeshSlicer
 
     private void TriangulateIntersection()
     {
-        m_intersectionVerticesPlane.Resize(m_slicer.m_iVertices.Count, Vector2.zero);
+        m_intersectionVerticesPlane.Resize(m_slicer.m_iVertices.Count, new Point2D());
         m_intersectionDatas.Resize(m_slicer.m_iVertices.Count, (Vector3.zero, new BoneWeight()));
 
         foreach(var kvp in m_slicer.m_iVertices)
